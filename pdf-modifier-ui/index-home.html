@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Bank Statement Tool - Select Mode</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 900px;
+      padding: 60px 40px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 12px;
+      font-size: 32px;
+    }
+
+    .subtitle {
+      color: #7f8c8d;
+      margin-bottom: 40px;
+      font-size: 16px;
+    }
+
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      margin-top: 40px;
+    }
+
+    .mode-card {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      border-radius: 10px;
+      padding: 30px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .mode-card.viewer-mode {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .mode-card.builder-mode {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+    }
+
+    .mode-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .mode-card.viewer-mode:hover {
+      box-shadow: 0 12px 24px rgba(102, 126, 234, 0.4);
+    }
+
+    .mode-card.builder-mode:hover {
+      box-shadow: 0 12px 24px rgba(245, 87, 108, 0.4);
+    }
+
+    .mode-card.editor-mode {
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+      color: white;
+    }
+
+    .mode-card.editor-mode:hover {
+      box-shadow: 0 12px 24px rgba(46, 204, 113, 0.4);
+    }
+
+    .mode-icon {
+      font-size: 48px;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+    }
+
+    .mode-card h2 {
+      font-size: 20px;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .mode-card p {
+      font-size: 14px;
+      margin: 0;
+      opacity: 0.9;
+      line-height: 1.5;
+    }
+
+    .features {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.3);
+      text-align: left;
+    }
+
+    .features li {
+      margin: 4px 0;
+      list-style: none;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .features li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      font-weight: bold;
+    }
+
+    .info-box {
+      background: #ecf0f1;
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      border-radius: 6px;
+      margin-top: 40px;
+      text-align: left;
+      color: #2c3e50;
+    }
+
+    .info-box h3 {
+      margin-bottom: 10px;
+      color: #667eea;
+    }
+
+    .info-box ul {
+      margin-left: 20px;
+    }
+
+    .info-box li {
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📄 Document Editor Suite</h1>
+    <p class="subtitle">Choose your tool to get started</p>
+
+    <div class="modes-grid">
+      <!-- PDF Viewer & Editor Mode -->
+      <a href="/viewer" class="mode-card viewer-mode">
+        <div class="mode-icon">👁️</div>
+        <h2>PDF Viewer & Editor</h2>
+        <p>Upload and modify any PDF with annotations</p>
+        <ul class="features">
+          <li>Highlight & markup text</li>
+          <li>Draw and add shapes</li>
+          <li>Add text annotations</li>
+          <li>Zoom & navigation</li>
+          <li>Undo/Redo support</li>
+          <li>Download modified PDF</li>
+        </ul>
+      </a>
+
+      <!-- ODF Document Editor Mode -->
+      <a href="/odf-editor" class="mode-card editor-mode">
+        <div class="mode-icon">📝</div>
+        <h2>ODF Document Editor</h2>
+        <p>Edit LibreOffice & OpenDocument files</p>
+        <ul class="features">
+          <li>Open ODT, ODS, ODP files</li>
+          <li>Edit text & formatting</li>
+          <li>Text styling tools</li>
+          <li>Document metadata</li>
+          <li>Word & character count</li>
+          <li>Save & download</li>
+        </ul>
+      </a>
+
+      <!-- Bank Statement Builder Mode -->
+      <a href="/index.html" class="mode-card builder-mode">
+        <div class="mode-icon">🏦</div>
+        <h2>Statement Builder</h2>
+        <p>Generate and create bank statements</p>
+        <ul class="features">
+          <li>Generate synthetic statements</li>
+          <li>Multiple bank templates</li>
+          <li>Custom transactions</li>
+          <li>Balance management</li>
+          <li>PDF generation</li>
+          <li>Form auto-fill</li>
+        </ul>
+      </a>
+    </div>
+
+    <div class="info-box">
+      <h3>💡 How to Use</h3>
+      <ul>
+        <li><strong>PDF Viewer & Editor:</strong> Perfect for reviewing and marking up any PDF document with annotations, highlights, and notes</li>
+        <li><strong>ODF Document Editor:</strong> Edit OpenDocument files (LibreOffice compatible) including text documents, spreadsheets, and presentations</li>
+        <li><strong>Statement Builder:</strong> Use this to generate new bank statements with synthetic data or modify existing ones</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

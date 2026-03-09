@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Viewer & Editor - Adobe-like</title>
+  <link rel="stylesheet" href="viewer-style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.1.392/pdf.min.js"></script>
+</head>
+<body>
+  <div class="editor-container">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-section">
+        <span class="file-info" id="fileInfo">No file loaded</span>
+      </div>
+      
+      <div class="toolbar-section">
+        <button id="btnOpen" class="toolbar-btn" title="Open PDF">
+          <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Open
+        </button>
+        <button id="btnPrev" class="toolbar-btn" title="Previous Page">
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        <input type="number" id="pageNum" class="page-input" min="1" max="1">
+        <span id="pageCount" class="page-count">of 1</span>
+        <button id="btnNext" class="toolbar-btn" title="Next Page">
+          <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+        </button>
+      </div>
+
+      <div class="toolbar-section">
+        <button id="btnZoomOut" class="toolbar-btn" title="Zoom Out">−</button>
+        <input type="range" id="zoomSlider" class="zoom-slider" min="50" max="200" value="100">
+        <span id="zoomLevel">100%</span>
+        <button id="btnZoomIn" class="toolbar-btn" title="Zoom In">+</button>
+      </div>
+
+      <div class="toolbar-section tools">
+        <button id="btnSelect" class="tool-btn active" data-tool="select" title="Select">
+          <svg viewBox="0 0 24 24"><path d="M3 3h8v2H5v6h2v2H3V3zm10-2h8v8h-2V5h-6V1zm6 10h2v8H5v-2h8v2h6v-8zm-8 8v-6h6v6h-6z"/></svg>
+        </button>
+        <button id="btnHighlight" class="tool-btn" data-tool="highlight" title="Highlight">
+          <svg viewBox="0 0 24 24"><path d="M17.75 7L19.57 5.18c.39-.39.39-1.02 0-1.41L18.23.86c-.39-.39-1.02-.39-1.41 0L15.75 2.27 8.46 9.57 3 15.02v6.41h6.41l5.45-5.45 7.29-7.29 1.41-1.41c.39-.39.39-1.02 0-1.41zM5.21 19H5v-.21l9.15-9.15 1.41 1.41-9.15 9.15H5.21z"/></svg>
+        </button>
+        <button id="btnDraw" class="tool-btn" data-tool="draw" title="Draw">
+          <svg viewBox="0 0 24 24"><path d="M3.878 3.878c2.368-2.368 6.208-2.378 8.586-.032l10.996 11.04c.781.782.781 2.048 0 2.829l-1.414 1.414c-.781.781-2.048.781-2.829 0l-10.996-11.04c-2.355-2.37-2.346-6.209.032-8.586zm2.828 2.828c-.785-.797-2.047-.797-2.832 0-.785.797-.785 2.089 0 2.886l.707-.707c.391-.391.391-1.023 0-1.414l2.125 2.125c.391-.391 1.023-.391 1.414 0l-.707-.707c-.797.785-2.089.785-2.886 0z"/></svg>
+        </button>
+        <button id="btnText" class="tool-btn" data-tool="text" title="Add Text">
+          <svg viewBox="0 0 24 24"><path d="M2.5 4v3h5v12h3V7h5V4h-13zm19 5h-9v3h3v7h3v-7h3V9z"/></svg>
+        </button>
+        <button id="btnEraser" class="tool-btn" data-tool="eraser" title="Eraser">
+          <svg viewBox="0 0 24 24"><path d="M16.24 3.56h-2.96c-.5 0-.99.19-1.35.57L5.5 15.5c-.59.64-.94 1.5-.94 2.41V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-8.59c0-.77-.29-1.52-.8-2.1l-5.5-5.75c-.36-.38-.84-.57-1.34-.57zm-9.15 16.5H7.5v-2.41h-.41V19.5zm6.7-.5h1.59v1.5H13.79v-1.5z"/></svg>
+        </button>
+      </div>
+
+      <div class="toolbar-section">
+        <button id="btnUndo" class="toolbar-btn" title="Undo">↶</button>
+        <button id="btnRedo" class="toolbar-btn" title="Redo">↷</button>
+      </div>
+
+      <div class="toolbar-section">
+        <button id="btnSave" class="toolbar-btn save-btn" title="Save & Download">
+          <svg viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg> Save
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Viewer Area -->
+    <div class="viewer-area">
+      <div id="canvas-container" class="canvas-container">
+        <canvas id="pdfCanvas"></canvas>
+        <canvas id="annotationCanvas" class="annotation-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Right Sidebar - Tool Options -->
+    <div class="sidebar">
+      <div class="tool-options" id="toolOptions">
+        <!-- Highlight Options -->
+        <div class="tool-panel" id="highlightPanel" style="display:none;">
+          <h4>Highlight Color</h4>
+          <div class="color-picker">
+            <button class="color-btn" data-color="#FFFF00" style="background:#FFFF00;" title="Yellow"></button>
+            <button class="color-btn" data-color="#00FF00" style="background:#00FF00;" title="Green"></button>
+            <button class="color-btn" data-color="#FF0000" style="background:#FF0000;" title="Red"></button>
+            <button class="color-btn" data-color="#00FFFF" style="background:#00FFFF;" title="Cyan"></button>
+          </div>
+        </div>
+
+        <!-- Draw Options -->
+        <div class="tool-panel" id="drawPanel" style="display:none;">
+          <h4>Pen Style</h4>
+          <div class="form-group">
+            <label>Color:</label>
+            <input type="color" id="drawColor" value="#000000">
+          </div>
+          <div class="form-group">
+            <label>Width:</label>
+            <input type="range" id="drawWidth" min="1" max="10" value="2">
+            <span id="widthDisplay">2px</span>
+          </div>
+          <div class="form-group">
+            <label>Style:</label>
+            <select id="drawStyle">
+              <option value="pen">Pen</option>
+              <option value="line">Line</option>
+              <option value="rect">Rectangle</option>
+              <option value="circle">Circle</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Text Options -->
+        <div class="tool-panel" id="textPanel" style="display:none;">
+          <h4>Text</h4>
+          <div class="form-group">
+            <label>Text:</label>
+            <input type="text" id="textInput" placeholder="Enter text">
+          </div>
+          <div class="form-group">
+            <label>Color:</label>
+            <input type="color" id="textColor" value="#000000">
+          </div>
+          <div class="form-group">
+            <label>Size:</label>
+            <input type="range" id="textSize" min="8" max="48" value="14">
+            <span id="sizeDisplay">14px</span>
+          </div>
+          <button id="btnAddText" class="btn-primary">Click to Place Text</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- File Input (Hidden) -->
+  <input type="file" id="fileInput" accept=".pdf" style="display:none;">
+
+  <!-- Toast Notifications -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="viewer.js"></script>
+</body>
+</html>

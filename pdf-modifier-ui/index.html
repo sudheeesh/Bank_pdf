@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Modifier Pro — Smart Bank Statement Editor</title>
+  <meta name="description"
+    content="Upload a bank statement PDF, set constraints, and download a clean modified statement." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ===== BUILD STATEMENT STYLES ===== */
+    .build-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid rgba(99, 102, 241, 0.25);
+      margin-bottom: 0;
+      padding: 0 2px;
+    }
+
+    .build-tab {
+      padding: 10px 22px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.45);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+
+    .build-tab:hover {
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .build-tab.active {
+      color: #a78bfa;
+      border-bottom: 3px solid #a78bfa;
+    }
+
+    .build-tab-num {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(99, 102, 241, 0.2);
+      color: #a78bfa;
+      font-size: 0.7rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .build-tab.active .build-tab-num {
+      background: #6366f1;
+      color: #fff;
+    }
+
+    .build-panel {
+      display: none;
+      padding: 20px 0 0;
+    }
+
+    .build-panel.active {
+      display: block;
+    }
+
+    /* Account info grid */
+    .acct-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .acct-grid .fg {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .acct-grid.large {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .acct-grid label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .acct-grid input {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: #fff;
+      padding: 9px 12px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .acct-grid input:focus {
+      outline: none;
+      border-color: rgba(99, 102, 241, 0.6);
+    }
+
+    .acct-grid input.auto-filled {
+      border-color: rgba(99, 241, 160, 0.4);
+      background: rgba(99, 241, 160, 0.05);
+    }
+
+    /* Transaction Entry Table */
+    .tx-entry-wrap {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .tx-entry-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .tx-entry-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .tx-count-badge {
+      background: rgba(99, 102, 241, 0.25);
+      color: #a78bfa;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .tx-entry-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    .tx-entry-table thead th {
+      background: rgba(99, 102, 241, 0.15);
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+
+    .tx-entry-table tbody tr {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: background 0.15s;
+    }
+
+    .tx-entry-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .tx-entry-table td {
+      padding: 4px 4px;
+    }
+
+    .tx-entry-table td input,
+    .tx-entry-table td select {
+      width: 100%;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      color: #fff;
+      padding: 5px 7px;
+      font-size: 0.8rem;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all 0.15s;
+    }
+
+    .tx-entry-table td input:focus,
+    .tx-entry-table td select:focus {
+      outline: none;
+      border-color: rgba(99, 102, 241, 0.5);
+      background: rgba(99, 102, 241, 0.08);
+    }
+
+    .tx-entry-table td input.td-desc {
+      font-family: inherit;
+      font-size: 0.8rem;
+    }
+
+    .tx-entry-table td input.td-num {
+      text-align: right;
+    }
+
+    .tx-entry-table td.td-bal-display {
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #818cf8;
+      padding: 5px 10px;
+    }
+
+    .tx-entry-table td.td-type-display {
+      text-align: center;
+    }
+
+    .tx-dr {
+      color: #f87171;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .tx-cr {
+      color: #4ade80;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .tx-entry-table td.td-actions {
+      text-align: center;
+      padding: 2px 6px;
+    }
+
+    .row-del-btn {
+      background: none;
+      border: none;
+      color: rgba(248, 113, 113, 0.4);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 3px 6px;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .row-del-btn:hover {
+      color: #f87171;
+      background: rgba(248, 113, 113, 0.1);
+    }
+
+    .add-row-area {
+      padding: 10px 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Balance preview */
+    .balance-preview {
+      display: flex;
+      gap: 16px;
+      padding: 14px 18px;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 10px;
+      margin-top: 16px;
+    }
+
+    .bal-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .bal-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 0.5px;
+    }
+
+    .bal-value {
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: #818cf8;
+    }
+
+    .bal-value.green {
+      color: #4ade80;
+    }
+
+    .bal-value.red {
+      color: #f87171;
+    }
+
+    /* Section header for build mode */
+    .build-section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      margin-bottom: 10px;
+    }
+
+    /* Download tab inside build */
+    .build-dl-card {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 14px;
+      padding: 24px;
+    }
+
+    .build-dl-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .build-dl-row .fg {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .build-dl-row label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .build-dl-row input[type="number"],
+    .build-dl-row input[type="range"] {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: #fff;
+      padding: 9px 12px;
+      font-size: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      width: 100%;
+    }
+
+    .build-dl-row input[type="number"]:focus {
+      outline: none;
+      border-color: rgba(99, 102, 241, 0.6);
+    }
+
+    .range-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .range-val {
+      font-size: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: #a78bfa;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    /* Tab nav buttons inside section */
+    .tab-nav-btns {
+      display: flex;
+      gap: 8px;
+      margin-top: 18px;
+      justify-content: flex-end;
+    }
+
+    .btn-next-tab {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 22px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn-next-tab:hover {
+      opacity: 0.85;
+    }
+
+    .btn-prev-tab {
+      background: rgba(255, 255, 255, 0.07);
+      color: rgba(255, 255, 255, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .td-sno {
+      width: 32px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.25);
+      font-size: 0.7rem;
+      padding: 5px 4px;
+    }
+
+    select.td-type-select {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      color: #fff;
+      padding: 4px 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 52px;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" />
+            <polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+            <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="logo-text">
+          <span class="logo-title">PDF Modifier<span class="logo-pro">Pro</span></span>
+          <span class="logo-sub">Smart Bank Statement Editor</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="mode-toggle" id="mode-toggle">
+          <button class="mode-btn active" id="btn-mode-smart" data-mode="smart">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path d="M2 17l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+            Smart Mode
+          </button>
+          <button class="mode-btn" id="btn-mode-manual" data-mode="manual">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            Manual Mode
+          </button>
+        </div>
+        <div class="status-badge">
+          <span class="status-dot"></span>
+          <span id="status-text">Ready</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- ===== STEP 1: UPLOAD ===== -->
+    <section class="section" id="section-upload">
+      <div class="section-header">
+        <div class="step-tag">Step 1</div>
+        <h2>Upload Your Bank Statement PDF</h2>
+        <p>We'll read the account info automatically — then you fill in the transactions</p>
+      </div>
+
+      <div class="upload-zone" id="upload-zone">
+        <div class="upload-content">
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
+              <polyline points="17 8 12 3 7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div class="upload-text">Drop your PDF here</div>
+          <div class="upload-sub">Supports SBI, HDFC, ICICI, Axis, PNB and most bank statement formats</div>
+          <div class="upload-meta">
+            <span>Max 50MB · PDF only</span>
+          </div>
+          <input type="file" id="file-input" accept=".pdf" hidden />
+          <button class="btn-upload" onclick="document.getElementById('file-input').click()">Browse File</button>
+        </div>
+        <div class="upload-progress" id="upload-progress" style="display:none;">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <div class="progress-label" id="progress-label">Uploading…</div>
+        </div>
+      </div>
+
+      <!-- File card -->
+      <div class="file-card" id="file-card" style="display:none;">
+        <div class="file-card-icon">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor"
+              stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            <polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div class="file-card-body">
+          <div class="file-name" id="file-name">file.pdf</div>
+          <div class="file-meta" id="file-meta">0 pages</div>
+        </div>
+        <button class="file-card-remove" id="file-card-remove" title="Remove file">✕</button>
+      </div>
+    </section>
+
+    <!-- ===== BUILD STATEMENT SECTION (Smart Mode) ===== -->
+    <section class="section" id="smart-mode-sections" style="display:none;">
+      <div class="section-header">
+        <div class="step-tag">Step 2</div>
+        <h2>Build Your Statement</h2>
+        <p>Account info auto-filled from PDF. Add transactions manually, then download.</p>
+      </div>
+
+      <!-- Tab Bar -->
+      <div class="build-tabs">
+        <button class="build-tab active" data-panel="panel-acct">
+          <span class="build-tab-num">1</span> Account Info
+        </button>
+        <button class="build-tab" data-panel="panel-txns">
+          <span class="build-tab-num">2</span> Transactions
+        </button>
+        <button class="build-tab" data-panel="panel-download">
+          <span class="build-tab-num">3</span> Download PDF
+        </button>
+      </div>
+
+      <!-- ── Panel 1: Account Info ── -->
+      <div class="build-panel active" id="panel-acct">
+        <p class="build-section-label">Bank &amp; Account Details (auto-filled from PDF)</p>
+        <div class="acct-grid large">
+          <div class="fg">
+            <label>Bank Name</label>
+            <input type="text" id="b-bank-name" placeholder="e.g. State Bank of India" />
+          </div>
+          <div class="fg">
+            <label>Account Holder Name</label>
+            <input type="text" id="b-acc-name" placeholder="Full Name" />
+          </div>
+          <div class="fg">
+            <label>Account Number</label>
+            <input type="text" id="b-acc-no" placeholder="XXXXXXXXXXXX" />
+          </div>
+          <div class="fg">
+            <label>Branch</label>
+            <input type="text" id="b-branch" placeholder="Branch Name" />
+          </div>
+          <div class="fg">
+            <label>IFSC Code</label>
+            <input type="text" id="b-ifsc" placeholder="SBIN0000001" />
+          </div>
+          <div class="fg">
+            <label>Statement Period</label>
+            <input type="text" id="b-period" placeholder="01-06-2025 To 07-12-2025" />
+          </div>
+          <div class="fg">
+            <label>CIF No</label>
+            <input type="text" id="b-cif" placeholder="" />
+          </div>
+          <div class="fg">
+            <label>Product</label>
+            <input type="text" id="b-product" placeholder="" />
+          </div>
+          <div class="fg">
+            <label>MICR Code</label>
+            <input type="text" id="b-micr" placeholder="" />
+          </div>
+          <div class="fg">
+            <label>Currency</label>
+            <input type="text" id="b-currency" placeholder="INR" />
+          </div>
+          <div class="fg">
+            <label>Account Status</label>
+            <input type="text" id="b-status" placeholder="OPEN" />
+          </div>
+          <div class="fg">
+            <label>Nominee Name</label>
+            <input type="text" id="b-nominee" placeholder="" />
+          </div>
+          <div class="fg">
+            <label>CKYC No</label>
+            <input type="text" id="b-ckyc" placeholder="" />
+          </div>
+          <div class="fg">
+            <label>Email</label>
+            <input type="text" id="b-email" placeholder="" />
+          </div>
+          <div class="fg">
+            <label>Address</label>
+            <input type="text" id="b-address" placeholder="Line 1\nLine 2\nLine 3" />
+          </div>
+          <div class="fg">
+            <label>Pin Code</label>
+            <input type="text" id="b-pin-code" placeholder="6XXXXX" />
+          </div>
+          <div class="fg">
+            <label>Branch Code</label>
+            <input type="text" id="b-branch-code" placeholder="" />
+          </div>
+          <div class="fg">
+            <label>Branch Email</label>
+            <input type="text" id="b-branch-email" placeholder="" />
+          </div>
+          <div class="fg">
+            <label>Branch Phone</label>
+            <input type="text" id="b-branch-phone" placeholder="" />
+          </div>
+          <div class="fg">
+            <label>Account Open Date</label>
+            <input type="text" id="b-acc-open-date" placeholder="DD-MM-YYYY" />
+          </div>
+          <div class="fg">
+            <label>Branch Pin Code</label>
+            <input type="text" id="b-branch-pin" placeholder="6XXXXX" />
+          </div>
+          <div class="fg">
+            <label>Branch Address</label>
+            <input type="text" id="b-branch-address" placeholder="" />
+          </div>
+        </div>
+        <div class="tab-nav-btns">
+          <button class="btn-next-tab" onclick="switchBuildTab('panel-txns')">Next: Add Transactions →</button>
+        </div>
+      </div>
+
+      <!-- ── Panel 2: Transactions ── -->
+      <div class="build-panel" id="panel-txns">
+        <div class="tx-entry-wrap">
+          <div class="tx-entry-toolbar">
+            <div class="tx-entry-toolbar-left">
+              <span>Transactions</span>
+              <span class="tx-count-badge" id="tx-count-badge">0 rows</span>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-sm" id="btn-auto-generate"
+                style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#4ade80;padding:5px 14px;border-radius:7px;font-size:0.76rem;font-weight:600;cursor:pointer;">
+                ⚡ Auto Generate
+              </button>
+              <button class="btn-sm" id="btn-smart-adjust"
+                style="background:rgba(234,179,8,0.15);border:1px solid rgba(234,179,8,0.3);color:#facc15;padding:5px 14px;border-radius:7px;font-size:0.76rem;font-weight:600;cursor:pointer;">
+                🎯 Smart Adjust
+              </button>
+              <button class="btn-sm" id="btn-import-from-pdf"
+                style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);color:#a78bfa;padding:5px 14px;border-radius:7px;font-size:0.76rem;font-weight:600;cursor:pointer;">
+                📥 Import PDF
+              </button>
+              <button class="btn-sm" id="btn-clear-all-rows"
+                style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);color:#f87171;padding:5px 14px;border-radius:7px;font-size:0.76rem;font-weight:600;cursor:pointer;">
+                🗑 Clear
+              </button>
+            </div>
+          </div>
+
+          <!-- Auto Generate Options Panel (hidden by default) -->
+          <div id="auto-gen-panel"
+            style="display:none; background:rgba(16,185,129,0.05); border-bottom:1px solid rgba(16,185,129,0.15); padding:16px;">
+            <p
+              style="font-size:0.75rem; color:#4ade80; font-weight:600; margin-bottom:12px; text-transform:uppercase; letter-spacing:0.5px;">
+              Auto Generate Transactions</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:14px;">
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">Start Month (MM/YYYY)</label>
+                <input type="text" id="ag-start" placeholder="04/2024"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">End Month (MM/YYYY)</label>
+                <input type="text" id="ag-end" placeholder="03/2025"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">Opening Balance (₹)</label>
+                <input type="number" id="ag-open" placeholder="50000"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">Closing Balance (₹)</label>
+                <input type="number" id="ag-close" placeholder="100000"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">Max Debit/Month (₹)</label>
+                <input type="number" id="ag-max-dr" placeholder="50000"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">Max Credit/Month (₹)</label>
+                <input type="number" id="ag-max-cr" placeholder="200000"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">Target PDF Pages</label>
+                <input type="number" id="ag-target-pages" placeholder="8" value="8"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">Max Debit/Txn (₹)</label>
+                <input type="number" id="ag-max-dr-txn" placeholder="5000"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">Max Credit/Txn (₹)</label>
+                <input type="number" id="ag-max-cr-txn" placeholder="20000"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(16,185,129,0.9);font-weight:700;">💼 Monthly Salary
+                  (₹)</label>
+                <input type="number" id="ag-salary" placeholder="100000"
+                  style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.4);color:#4ade80;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;font-weight:bold;" />
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button id="btn-run-auto-gen"
+                style="background:#10b981;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:0.8rem;font-weight:bold;cursor:pointer;">Generate
+                Now</button>
+              <button id="btn-cancel-auto-gen"
+                style="background:rgba(255,255,255,0.1);color:#ccc;border:1px solid rgba(255,255,255,0.2);padding:7px 16px;border-radius:6px;font-size:0.8rem;font-weight:bold;cursor:pointer;">Cancel</button>
+            </div>
+          </div>
+
+          <!-- Smart Adjust Panel (hidden by default) -->
+          <div id="smart-adjust-panel"
+            style="display:none; background:rgba(234,179,8,0.05); border-bottom:1px solid rgba(234,179,8,0.15); padding:16px;">
+            <p
+              style="font-size:0.75rem; color:#facc15; font-weight:600; margin-bottom:12px; text-transform:uppercase; letter-spacing:0.5px;">
+              Smart Adjust Existing Rows</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; margin-bottom:14px;">
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">Opening Balance (₹)</label>
+                <input type="number" id="sa-open" placeholder="50000"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">Closing Balance (₹) (Optional)</label>
+                <input type="number" id="sa-close" placeholder="100000"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">Max Debit/Month (₹)</label>
+                <input type="number" id="sa-max-dr" placeholder="50000"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">Max Credit/Month (₹)</label>
+                <input type="number" id="sa-max-cr" placeholder="200000"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">Max Debit/Txn (₹)</label>
+                <input type="number" id="sa-max-dr-txn" placeholder="5000"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(255,255,255,0.6);">Max Credit/Txn (₹)</label>
+                <input type="number" id="sa-max-cr-txn" placeholder="20000"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.7rem;color:rgba(234,179,8,0.9);font-weight:700;">💼 Monthly Salary (₹)</label>
+                <input type="number" id="sa-salary" placeholder="100000"
+                  style="background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.4);color:#facc15;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;font-weight:bold;" />
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button id="btn-run-smart-adjust"
+                style="background:#facc15;color:#000;border:none;padding:7px 16px;border-radius:6px;font-size:0.8rem;font-weight:bold;cursor:pointer;">Adjust
+                Values</button>
+              <button id="btn-cancel-smart-adjust"
+                style="background:rgba(255,255,255,0.1);color:#ccc;border:1px solid rgba(255,255,255,0.2);padding:7px 16px;border-radius:6px;font-size:0.8rem;font-weight:bold;cursor:pointer;">Cancel</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="tx-entry-table">
+              <thead>
+                <tr>
+                  <th style="width:30px;">#</th>
+                  <th style="width:100px;">Date</th>
+                  <th>Description / Narration</th>
+                  <th style="width:100px;">Debit (₹)</th>
+                  <th style="width:100px;">Credit (₹)</th>
+                  <th style="width:105px;">Balance (₹)</th>
+                  <th style="width:50px;">Dr/Cr</th>
+                  <th style="width:40px;"></th>
+                </tr>
+              </thead>
+              <tbody id="tx-entry-body">
+                <!-- rows injected by JS -->
+              </tbody>
+            </table>
+          </div>
+          <div class="add-row-area">
+            <button class="btn-sm" id="btn-add-row"
+              style="background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.35);color:#a78bfa;padding:7px 18px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+              <span style="font-size:1.1rem;line-height:1;">+</span> Add Row
+            </button>
+            <button class="btn-sm" id="btn-add-5-rows"
+              style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);color:rgba(167,139,250,0.7);padding:7px 14px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;">
+              Add 5 Rows
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Balance Preview -->
+        <div class="balance-preview" id="live-balance-preview">
+          <div class="bal-item">
+            <div class="bal-label">Opening Balance</div>
+            <div class="bal-value" id="lbp-open">₹ 0.00</div>
+          </div>
+          <div class="bal-item">
+            <div class="bal-label">Total Credit</div>
+            <div class="bal-value green" id="lbp-credit">₹ 0.00</div>
+          </div>
+          <div class="bal-item">
+            <div class="bal-label">Total Debit</div>
+            <div class="bal-value red" id="lbp-debit">₹ 0.00</div>
+          </div>
+          <div class="bal-item">
+            <div class="bal-label">Closing Balance</div>
+            <div class="bal-value" id="lbp-close">₹ 0.00</div>
+          </div>
+          <div class="bal-item">
+            <div class="bal-label">Rows</div>
+            <div class="bal-value" id="lbp-count">0</div>
+          </div>
+        </div>
+
+        <div class="tab-nav-btns">
+          <button class="btn-prev-tab" onclick="switchBuildTab('panel-acct')">← Back</button>
+          <button class="btn-next-tab" onclick="switchBuildTab('panel-download')">Next: Download →</button>
+        </div>
+      </div>
+
+      <!-- ── Panel 3: Download ── -->
+      <div class="build-panel" id="panel-download">
+        <div class="build-dl-card">
+          <p class="build-section-label">PDF Settings</p>
+          <div class="build-dl-row">
+            <div class="fg">
+              <label>Opening Balance (₹)</label>
+              <input type="number" id="dl-opening" placeholder="0" />
+            </div>
+            <div class="fg">
+              <label>Closing Balance (₹)</label>
+              <input type="number" id="dl-closing" placeholder="Auto calculated" />
+            </div>
+            <div class="fg">
+              <label>Max Pages (8–15)</label>
+              <div class="range-wrap">
+                <input type="range" id="dl-max-pages" min="8" max="15" value="8" step="1" style="flex:1;" />
+                <span class="range-val" id="dl-pages-val">8 pages</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div class="balance-preview" style="margin-bottom:20px;">
+            <div class="bal-item">
+              <div class="bal-label">Account</div>
+              <div class="bal-value" id="dl-summary-name" style="font-size:0.8rem;">—</div>
+            </div>
+            <div class="bal-item">
+              <div class="bal-label">Transactions</div>
+              <div class="bal-value" id="dl-summary-count">0</div>
+            </div>
+            <div class="bal-item">
+              <div class="bal-label">Total Debit</div>
+              <div class="bal-value red" id="dl-summary-debit">₹ 0.00</div>
+            </div>
+            <div class="bal-item">
+              <div class="bal-label">Total Credit</div>
+              <div class="bal-value green" id="dl-summary-credit">₹ 0.00</div>
+            </div>
+            <div class="bal-item">
+              <div class="bal-label">Closing Balance</div>
+              <div class="bal-value" id="dl-summary-closing">₹ 0.00</div>
+            </div>
+          </div>
+
+          <button class="btn-primary" id="btn-build-download"
+            style="width:100%;padding:14px;font-size:0.95rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;">
+            <svg viewBox="0 0 24 24" fill="none" style="width:18px;height:18px;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round" />
+              <polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+            </svg>
+            Generate &amp; Download PDF
+          </button>
+        </div>
+
+        <div class="tab-nav-btns">
+          <button class="btn-prev-tab" onclick="switchBuildTab('panel-txns')">← Back to Transactions</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== MANUAL MODE SECTION ===== -->
+    <section class="section" id="manual-mode-sections" style="display:none;">
+      <div class="section-header">
+        <div class="step-tag">Manual Mode</div>
+        <h2>Manual PDF Editor</h2>
+        <p>Define precise text replacements, whiteouts and annotations at exact coordinates</p>
+      </div>
+      <div class="info-card" style="text-align:center;padding:30px;color:rgba(255,255,255,0.4);font-size:0.85rem;">
+        Upload a PDF first to enable manual editing tools
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading-overlay" style="display:none;">
+    <div class="loading-card">
+      <div class="loading-spinner"></div>
+      <div class="loading-text" id="loading-text">Processing…</div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

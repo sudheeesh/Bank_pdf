@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ODF Document Editor - LibreOffice Compatible</title>
+  <link rel="stylesheet" href="odf-editor-style.css">
+</head>
+<body>
+  <div class="editor-container">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-section">
+        <span class="file-info" id="fileInfo">No file loaded</span>
+      </div>
+      
+      <div class="toolbar-section">
+        <button id="btnOpen" class="toolbar-btn" title="Open ODF Document">
+          <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Open
+        </button>
+      </div>
+
+      <div class="toolbar-section format-buttons">
+        <button id="btnBold" class="format-btn" title="Bold (Ctrl+B)">
+          <strong>B</strong>
+        </button>
+        <button id="btnItalic" class="format-btn" title="Italic (Ctrl+I)">
+          <em>I</em>
+        </button>
+        <button id="btnUnderline" class="format-btn" title="Underline (Ctrl+U)">
+          <u>U</u>
+        </button>
+        <div class="toolbar-divider"></div>
+        <select id="fontFamily" class="font-selector" title="Font Family">
+          <option value="Arial">Arial</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Verdana">Verdana</option>
+          <option value="Georgia">Georgia</option>
+        </select>
+        <select id="fontSize" class="font-size" title="Font Size">
+          <option value="8">8pt</option>
+          <option value="10">10pt</option>
+          <option value="12" selected>12pt</option>
+          <option value="14">14pt</option>
+          <option value="16">16pt</option>
+          <option value="18">18pt</option>
+          <option value="24">24pt</option>
+          <option value="32">32pt</option>
+        </select>
+        <input type="color" id="fontColor" class="color-picker" title="Font Color" value="#000000">
+      </div>
+
+      <div class="toolbar-section">
+        <button id="btnUndo" class="toolbar-btn" title="Undo">↶</button>
+        <button id="btnRedo" class="toolbar-btn" title="Redo">↷</button>
+      </div>
+
+      <div class="toolbar-section">
+        <button id="btnSave" class="toolbar-btn save-btn" title="Save & Download">
+          <svg viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg> Save
+        </button>
+      </div>
+    </div>
+
+    <!-- Editor Area -->
+    <div class="editor-area">
+      <div id="editorContent" class="document-editor" contenteditable="true">
+        <p>Start typing here... Open an ODF document to edit.</p>
+      </div>
+    </div>
+
+    <!-- Right Sidebar - Document Properties -->
+    <div class="sidebar">
+      <div class="document-info">
+        <h4>Document Info</h4>
+        <div class="info-field">
+          <label>Title:</label>
+          <input type="text" id="docTitle" placeholder="Untitled">
+        </div>
+        <div class="info-field">
+          <label>Author:</label>
+          <input type="text" id="docAuthor" placeholder="Unknown">
+        </div>
+        <div class="info-field">
+          <label>Subject:</label>
+          <input type="text" id="docSubject" placeholder="No subject">
+        </div>
+        <div class="info-field">
+          <label>Keywords:</label>
+          <input type="text" id="docKeywords" placeholder="Add keywords...">
+        </div>
+        <div class="info-field">
+          <label>File Type:</label>
+          <span id="docType">—</span>
+        </div>
+        <div class="info-field">
+          <label>Created:</label>
+          <span id="docCreated">—</span>
+        </div>
+        <div class="info-field">
+          <label>Modified:</label>
+          <span id="docModified">—</span>
+        </div>
+      </div>
+
+      <div class="document-stats">
+        <h4>Statistics</h4>
+        <div class="stat-row">
+          <span>Words:</span>
+          <span id="wordCount">0</span>
+        </div>
+        <div class="stat-row">
+          <span>Characters:</span>
+          <span id="charCount">0</span>
+        </div>
+        <div class="stat-row">
+          <span>Paragraphs:</span>
+          <span id="paraCount">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- File Input (Hidden) -->
+  <input type="file" id="fileInput" accept=".odt,.odp,.ods,.docx" style="display:none;">
+
+  <!-- Toast Notifications -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="odf-editor.js"></script>
+</body>
+</html>

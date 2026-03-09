@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+body{
+  font-family: "Times New Roman", serif;
+  font-size:12px;
+  color:#000;
+}
+
+.title{
+  text-align:center;
+  font-size:18px;
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
+.info{
+  width:100%;
+  margin-bottom:15px;
+}
+
+.info td{
+  padding:3px 6px;
+}
+
+.statement{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+}
+
+.statement th{
+  border-bottom:1px solid #000;
+  border-top:1px solid #000;
+  padding:6px 4px;
+  text-align:center;
+}
+
+.statement td{
+  padding:5px 4px;
+  border-bottom:1px solid #ccc;
+}
+
+.right{ text-align:right; }
+.center{ text-align:center; }
+
+.balanceBox{
+  margin-top:12px;
+  font-weight:bold;
+}
+
+.footer{
+  margin-top:25px;
+  font-size:11px;
+  text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="title">SOUTH INDIAN BANK LTD</div>
+
+<table class="info">
+<tr><td>Account Name</td><td>: {{accountName}}</td></tr>
+<tr><td>Account Number</td><td>: {{accountNumber}}</td></tr>
+<tr><td>Branch</td><td>: {{branch}}</td></tr>
+<tr><td>Opening Balance</td><td>: {{opening}}</td></tr>
+</table>
+
+<table class="statement">
+<thead>
+<tr>
+<th>Date</th>
+<th>Description</th>
+<th class="right">Dr</th>
+<th class="right">Cr</th>
+<th class="right">Balance</th>
+</tr>
+</thead>
+<tbody>
+{{rows}}
+</tbody>
+</table>
+
+<div class="balanceBox">
+Closing Balance : {{closing}}
+</div>
+
+<div class="footer">
+*** This is a system generated statement ***
+</div>
+
+</body>
+</html>

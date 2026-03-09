@@ -1,0 +1,415 @@
+/* ODF Document Editor Styles */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    Cantarell, sans-serif;
+  background: #f0f0f0;
+  color: #333;
+}
+
+/* Editor Container Layout */
+.editor-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #fff;
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: linear-gradient(to right, #2c3e50, #34495e);
+  border-bottom: 1px solid #1a252f;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap;
+}
+
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.toolbar-section:last-child {
+  border-right: none;
+}
+
+.toolbar-btn {
+  padding: 6px 10px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 32px;
+  height: 32px;
+  justify-content: center;
+}
+
+.toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.toolbar-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* Format Buttons */
+.format-buttons {
+  border-right: none;
+}
+
+.format-btn {
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  min-width: 28px;
+  height: 28px;
+}
+
+.format-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.format-btn.active {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-color: #667eea;
+}
+
+/* Toolbar Divider */
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 4px;
+}
+
+/* Selectors */
+.font-selector,
+.font-size {
+  padding: 4px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.font-selector option,
+.font-size option {
+  background: #2c3e50;
+  color: #fff;
+}
+
+.color-picker {
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  cursor: pointer;
+  background: #fff;
+}
+
+/* File Info */
+.file-info {
+  color: #ecf0f1;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Save Button */
+.save-btn {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  font-weight: 600;
+}
+
+.save-btn:hover {
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+}
+
+/* Editor Area */
+.editor-area {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  background: #fff;
+  position: relative;
+  padding: 20px;
+}
+
+.document-editor {
+  flex: 1;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 20px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  outline: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.document-editor:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.document-editor p {
+  margin-bottom: 1em;
+}
+
+.document-editor h1,
+.document-editor h2,
+.document-editor h3 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.document-editor h1 {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.document-editor h2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.document-editor h3 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  background: #f8f9fa;
+  border-left: 1px solid #e0e0e0;
+  overflow-y: auto;
+  padding: 16px;
+  min-width: 0;
+}
+
+.document-info,
+.document-stats {
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 16px;
+}
+
+.document-info h4,
+.document-stats h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #2c3e50;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-field:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.info-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-field input {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.info-field input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.info-field span {
+  font-size: 12px;
+  color: #666;
+  padding: 4px 0;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-row span:first-child {
+  font-weight: 600;
+  color: #555;
+}
+
+.stat-row span:last-child {
+  color: #668eea;
+  font-weight: 500;
+}
+
+/* Toast Notifications */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  padding: 12px 20px;
+  background: #323232;
+  color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  font-size: 13px;
+  font-weight: 500;
+  animation: slideIn 0.3s ease;
+}
+
+.toast.success {
+  background: #4caf50;
+}
+
+.toast.error {
+  background: #f44336;
+}
+
+.toast.info {
+  background: #2196f3;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Scrollbar Styling */
+.document-editor::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.document-editor::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.document-editor::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.document-editor::-webkit-scrollbar-thumb:hover,
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 220px;
+  }
+
+  .toolbar {
+    gap: 8px;
+  }
+
+  .toolbar-section {
+    padding: 0 4px;
+    border-right: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+
+  .editor-container {
+    flex-direction: column;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .toolbar-section {
+    width: 100%;
+  }
+
+  .document-editor {
+    padding: 10px;
+    font-size: 13px;
+  }
+}

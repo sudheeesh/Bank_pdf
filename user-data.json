@@ -1,0 +1,483 @@
+[
+    {
+        "date": "01-07-2025",
+        "desc": "07-11-2025 WDL TFR UPI/DR/531140876912/ILYAS",
+        "debit": 700,
+        "credit": 0,
+        "balance": 687984.96
+    },
+    {
+        "date": "01-07-2025",
+        "desc": "12-09-2025 DEP TFR UPI/CR/562144158052/ANVAR",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 690984.96
+    },
+    {
+        "date": "01-07-2025",
+        "desc": "28-10-2025 DEP TFR UPI/CR/530107740898/RATHEES",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 693984.96
+    },
+    {
+        "date": "01-07-2025",
+        "desc": "11-08-2025 CHQ TRFR FROM 0042738665159 OF LORD",
+        "debit": 0,
+        "credit": 2936.75,
+        "balance": 696921.71
+    },
+    {
+        "date": "02-07-2025",
+        "desc": "02-10-2025 DEP TFR UPI/CR/527503919980/AYUSH",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 699921.71
+    },
+    {
+        "date": "02-07-2025",
+        "desc": "06-12-2025 WDL TFR UPI/DR/570623343132/Meesho/",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 702921.71
+    },
+    {
+        "date": "02-07-2025",
+        "desc": "10-11-2025 DIRECT DR 0043812810221 OF Ms. DIVYA",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 705921.71
+    },
+    {
+        "date": "03-07-2025",
+        "desc": "11-09-2025 DEP TFR NEFT*HDFC0000001*HDFCH004",
+        "debit": 100,
+        "credit": 0,
+        "balance": 705821.71
+    },
+    {
+        "date": "03-07-2025",
+        "desc": "10-11-2025 DEBIT ACHDr YESB00707000028634",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 708821.71
+    },
+    {
+        "date": "04-07-2025",
+        "desc": "05-11-2025 DIRECT DR 0043812345514 OF Ms. DIVYA",
+        "debit": 100,
+        "credit": 0,
+        "balance": 708721.71
+    },
+    {
+        "date": "04-07-2025",
+        "desc": "23-07-2025 DEP TFR UPI/CR/520487117100/UNIQUE/I",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 711721.71
+    },
+    {
+        "date": "05-07-2025",
+        "desc": "16-09-2025 DEP TFR UPI/CR/560773292595/MAHESH",
+        "debit": 100,
+        "credit": 0,
+        "balance": 711621.71
+    },
+    {
+        "date": "06-07-2025",
+        "desc": "20-07-2025 DEP TFR UPI/CR/108411875105/SHERON",
+        "debit": 100,
+        "credit": 0,
+        "balance": 711521.71
+    },
+    {
+        "date": "06-07-2025",
+        "desc": "13-11-2025 WDL TFR UPI/DR/531795165659/PRASAN",
+        "debit": 0,
+        "credit": 550,
+        "balance": 712071.71
+    },
+    {
+        "date": "07-07-2025",
+        "desc": "21-11-2025 DEP TFR UPI/CR/532565547061/Mrs A S",
+        "debit": 100,
+        "credit": 0,
+        "balance": 711971.71
+    },
+    {
+        "date": "07-07-2025",
+        "desc": "25-11-2025 WDL TFR UPI/DR/532930406607/vpvinod5",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 714971.71
+    },
+    {
+        "date": "08-07-2025",
+        "desc": "13-11-2025 DEP TFR UPI/CR/114081469975/ANU",
+        "debit": 100,
+        "credit": 0,
+        "balance": 714871.71
+    },
+    {
+        "date": "09-07-2025",
+        "desc": "13-09-2025 DEP TFR UPI/CR/562243260858/VISHNUR",
+        "debit": 200,
+        "credit": 0,
+        "balance": 714671.71
+    },
+    {
+        "date": "09-07-2025",
+        "desc": "30-09-2025 DEP TFR NEFT*HDFC0000001*HDFCH005",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 717671.71
+    },
+    {
+        "date": "09-07-2025",
+        "desc": "18-09-2025 DEP TFR NEFT*HDFC0000001*HDFCH004",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 720671.71
+    },
+    {
+        "date": "09-07-2025",
+        "desc": "23-10-2025 DEP TFR UPI/CR/529629194317/Mrs",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 723671.71
+    },
+    {
+        "date": "10-07-2025",
+        "desc": "12-11-2025 WDL TFR UPI/DR/568216882001/Ms",
+        "debit": 100,
+        "credit": 0,
+        "balance": 723571.71
+    },
+    {
+        "date": "10-07-2025",
+        "desc": "08-10-2025 DEP TFR UPI/CR/528118614675/AMAL",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 726571.71
+    },
+    {
+        "date": "10-07-2025",
+        "desc": "15-09-2025 DEP TFR UPI/CR/562460142514/SUNITHA",
+        "debit": 0,
+        "credit": 500,
+        "balance": 727071.71
+    },
+    {
+        "date": "11-07-2025",
+        "desc": "24-10-2025 DEP TFR UPI/CR/566357464406/SUPRIYA",
+        "debit": 100,
+        "credit": 0,
+        "balance": 726971.71
+    },
+    {
+        "date": "12-07-2025",
+        "desc": "20-09-2025 DEP TFR UPI/CR/526302571120/ANEESH",
+        "debit": 100,
+        "credit": 0,
+        "balance": 726871.71
+    },
+    {
+        "date": "12-07-2025",
+        "desc": "20-08-2025 DEP TFR UPI/CR/523271348896/SIPPY",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 729871.71
+    },
+    {
+        "date": "12-07-2025",
+        "desc": "13-09-2025 DEP TFR UPI/CR/562235178143/STAR",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 732871.71
+    },
+    {
+        "date": "13-07-2025",
+        "desc": "15-09-2025 DEP TFR UPI/CR/562470760947/MS",
+        "debit": 100,
+        "credit": 0,
+        "balance": 732771.71
+    },
+    {
+        "date": "13-07-2025",
+        "desc": "24-11-2025 WDL TFR UPI/DR/532872714081/BINOY",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 735771.71
+    },
+    {
+        "date": "14-07-2025",
+        "desc": "07-12-2025 WDL TFR UPI/DR/534194098378/RAJIB",
+        "debit": 100,
+        "credit": 0,
+        "balance": 735671.71
+    },
+    {
+        "date": "14-07-2025",
+        "desc": "21-07-2025 DEP TFR UPI/CR/108495987891/SHAHEE",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 738671.71
+    },
+    {
+        "date": "14-07-2025",
+        "desc": "15-09-2025 DEP TFR UPI/CR/111270746574/VISHNU",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 741671.71
+    },
+    {
+        "date": "14-07-2025",
+        "desc": "07-11-2025 DEP TFR NEFT*IBKL0000998*ICMS25110",
+        "debit": 0,
+        "credit": 500,
+        "balance": 742171.71
+    },
+    {
+        "date": "14-07-2025",
+        "desc": "08-10-2025 CHQ TRFR FROM 0042738665159 OF LORD",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 745171.71
+    },
+    {
+        "date": "15-07-2025",
+        "desc": "20-07-2025 DEP TFR UPI/CR/108406938318/SHAHIDA",
+        "debit": 100,
+        "credit": 0,
+        "balance": 745071.71
+    },
+    {
+        "date": "16-07-2025",
+        "desc": "04-12-2025 DEP TFR UPI/CR/570400312644/PUNNOO",
+        "debit": 100,
+        "credit": 0,
+        "balance": 744971.71
+    },
+    {
+        "date": "16-07-2025",
+        "desc": "11-11-2025 WDL TFR UPI/DR/531512231456/RAJESH",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 747971.71
+    },
+    {
+        "date": "17-07-2025",
+        "desc": "16-09-2025 DEP TFR UPI/CR/525984460147/SHANY M",
+        "debit": 100, credit: 0, balance: 747871.71
+    },
+    {
+        "date": "17-07-2025",
+        "desc": "14-10-2025 DEP TFR UPI/CR/528735341446/R",
+        "debit": 0,
+        "credit": 2300,
+        "balance": 750171.71
+    },
+    {
+        "date": "18-07-2025",
+        "desc": "04-12-2025 CHQ TRFR FROM DD PAYMENT",
+        "debit": 100,
+        "credit": 0,
+        "balance": 750071.71
+    },
+    {
+        "date": "18-07-2025",
+        "desc": "20-09-2025 DEP TFR UPI/CR/111500671152/FAKRUDE",
+        "debit": 0,
+        "credit": 1950,
+        "balance": 752021.71
+    },
+    {
+        "date": "18-07-2025",
+        "desc": "24-11-2025 WDL TFR UPI/DR/532868128487/ARCHAN",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 755021.71
+    },
+    {
+        "date": "19-07-2025",
+        "desc": "02-12-2025 WDL TFR UPI/DR/533642921826/KAMALA",
+        "debit": 100,
+        "credit": 0,
+        "balance": 754921.71
+    },
+    {
+        "date": "19-07-2025",
+        "desc": "06-12-2025 WDL TFR UPI/DR/534030945681/VINOD",
+        "debit": 0,
+        "credit": 530,
+        "balance": 755451.71
+    },
+    {
+        "date": "20-07-2025",
+        "desc": "07-08-2025 DEP TFR UPI/CR/521955098292/GOPAKU",
+        "debit": 2150,
+        "credit": 0,
+        "balance": 753301.71
+    },
+    {
+        "date": "21-07-2025",
+        "desc": "02-12-2025 DEP TFR UPI/CR/533642750887/BINOY",
+        "debit": 100,
+        "credit": 0,
+        "balance": 753201.71
+    },
+    {
+        "date": "22-07-2025",
+        "desc": "28-10-2025 DEP TFR UPI/CR/530121387736/GEETHA",
+        "debit": 100,
+        "credit": 0,
+        "balance": 753101.71
+    },
+    {
+        "date": "22-07-2025",
+        "desc": "15-08-2025 DEP TFR UPI/CR/559320369064/HAMAD",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 756101.71
+    },
+    {
+        "date": "23-07-2025",
+        "desc": "25-06-2025 INTEREST CREDIT",
+        "debit": 2000,
+        "credit": 0,
+        "balance": 754101.71
+    },
+    {
+        "date": "23-07-2025",
+        "desc": "18-09-2025 DEP TFR UPI/CR/526156403811/ARUN  R",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 757101.71
+    },
+    {
+        "date": "24-07-2025",
+        "desc": "03-11-2025 DEP TFR NEFT*HDFC0000001*HDFCH005",
+        "debit": 100,
+        "credit": 0,
+        "balance": 757001.71
+    },
+    {
+        "date": "24-07-2025",
+        "desc": "11-11-2025 DEP TFR UPI/CR/531516326348/AJAYAN",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 760001.71
+    },
+    {
+        "date": "24-07-2025",
+        "desc": "26-09-2025 DEP TFR UPI/CR/526908906285/ANJU  R",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 763001.71
+    },
+    {
+        "date": "25-07-2025",
+        "desc": "10-11-2025 DIRECT DR 0043812818038 OF Ms. DIVYA",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 766001.71
+    },
+    {
+        "date": "26-07-2025",
+        "desc": "07-10-2025 DEP TFR UPI/CR/564616234898/BINU",
+        "debit": 140,
+        "credit": 0,
+        "balance": 765861.71
+    },
+    {
+        "date": "26-07-2025",
+        "desc": "23-10-2025 DEP TFR UPI/CR/529629194317/Mrs",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 768861.71
+    },
+    {
+        "date": "26-07-2025",
+        "desc": "22-07-2025 DEP TFR UPI/CR/520355084455/MS",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 771861.71
+    },
+    {
+        "date": "27-07-2025",
+        "desc": "20-11-2025 WDL TFR UPI/DR/569068754945/DIVYA L",
+        "debit": 100,
+        "credit": 0,
+        "balance": 771761.71
+    },
+    {
+        "date": "27-07-2025",
+        "desc": "07-12-2025 WDL TFR UPI/DR/534184821939/SIVA V",
+        "debit": 0,
+        "credit": 900,
+        "balance": 772661.71
+    },
+    {
+        "date": "27-07-2025",
+        "desc": "08-07-2025 CHQ TRFR FROM 0042738665159 OF LORD",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 775661.71
+    },
+    {
+        "date": "27-07-2025",
+        "desc": "04-11-2025 WDL TFR UPI/DR/567434833887/KIRAN A",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 778661.71
+    },
+    {
+        "date": "28-07-2025",
+        "desc": "17-09-2025 DEP TFR UPI/CR/562679843201/SHANAV",
+        "debit": 248.24,
+        "credit": 0,
+        "balance": 778413.47
+    },
+    {
+        "date": "28-07-2025",
+        "desc": "18-11-2025 DEP TFR NEFT*HDFC0000001*HDFCH006",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 781413.47
+    },
+    {
+        "date": "29-07-2025",
+        "desc": "10-10-2025 DEP TFR UPI/CR/564941462937/KIRAN A",
+        "debit": 100,
+        "credit": 0,
+        "balance": 781313.47
+    },
+    {
+        "date": "30-07-2025",
+        "desc": "13-09-2025 DEP TFR UPI/CR/562243260858/VISHNUR",
+        "debit": 100,
+        "credit": 0,
+        "balance": 781213.47
+    },
+    {
+        "date": "31-07-2025",
+        "desc": "08-07-2025 CHQ TRFR FROM 0042738665159 OF LORD",
+        "debit": 500,
+        "credit": 0,
+        "balance": 780713.47
+    },
+    {
+        "date": "31-07-2025",
+        "desc": "16-08-2025 DEP TFR UPI/CR/522882632065/KARUNA",
+        "debit": 0,
+        "credit": 1500,
+        "balance": 782213.47
+    },
+    {
+        "date": "31-07-2025",
+        "desc": "13-11-2025 DEP TFR NEFT*HDFC0000001*HDFCH006",
+        "debit": 0,
+        "credit": 3000,
+        "balance": 785213.47
+    }
+]
