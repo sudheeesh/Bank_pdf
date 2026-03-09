@@ -282,8 +282,17 @@ function createRow(data = {}) {
     <td><input class="td-num td-credit" type="text" placeholder="0.00" value="${data.credit || ''}" /></td>
     <td class="td-bal-display" data-bal="0">—</td>
     <td class="td-type-display"><span class="tx-?">—</span></td>
-    <td class="td-actions"><button class="row-del-btn" title="Delete row">🗑</button></td>
+    <td class="td-actions">
+      <button class="row-tally-btn" title="Adjust this row to tally balance">🎯</button>
+      <button class="row-del-btn" title="Delete row">🗑</button>
+    </td>
   `;
+
+  // Tally this row
+  row.querySelector('.row-tally-btn').addEventListener('click', () => {
+    tallyToThisRow(row);
+  });
+
 
   // Delete row
   row.querySelector('.row-del-btn').addEventListener('click', () => {
@@ -294,8 +303,14 @@ function createRow(data = {}) {
 
   // Recalculate on any input change
   row.querySelectorAll('input').forEach(inp => {
-    inp.addEventListener('input', () => rebuildBalances());
+    inp.addEventListener('input', () => {
+      rebuildBalances();
+      if (document.getElementById('cb-auto-tally')?.checked) {
+        tallyBalance(true, row); // Silent tally, avoid adjusting the row user is typing in
+      }
+    });
   });
+
 
   return row;
 }
@@ -571,7 +586,119 @@ function rebuildBalances() {
   document.getElementById('lbp-debit').textContent = '₹ ' + inr(totalDr);
   document.getElementById('lbp-close').textContent = '₹ ' + inr(running);
   document.getElementById('lbp-count').textContent = txBody.querySelectorAll('tr').length;
+
+  // Check against target
+  const targetClose = parseNum(document.getElementById('dl-closing')?.value);
+  const diffEl = document.getElementById('lbp-diff-wrap');
+  if (targetClose && Math.abs(targetClose - running) > 0.01) {
+    const diff = running - targetClose;
+    const diffVal = document.getElementById('lbp-diff');
+    if (diffVal) {
+      diffVal.textContent = (diff > 0 ? '+' : '') + inr(diff);
+      diffVal.className = 'bal-value ' + (diff > 0 ? 'red' : 'green');
+    }
+    if (diffEl) diffEl.style.display = 'flex';
+  } else {
+    if (diffEl) diffEl.style.display = 'none';
+  }
 }
+
+/** 
+ * Tally to Goal: Adjust another row to make the final balance match the target.
+ */
+function tallyBalance(silent = false, excludeRow = null) {
+  const targetClose = parseNum(document.getElementById('dl-closing')?.value);
+  if (!targetClose && targetClose !== 0) {
+    if (!silent) toast('Please set a Target Closing Balance in the Download tab first.', 'info');
+    return;
+  }
+
+  const openBal = parseNum(document.getElementById('dl-opening')?.value);
+  const rows = Array.from(txBody.querySelectorAll('tr'));
+  if (rows.length < (excludeRow ? 2 : 1)) return; // Need at least one row, or two if we exclude one
+
+  let currentTotal = openBal;
+  rows.forEach(r => {
+    currentTotal += parseNum(r.querySelector('.td-credit')?.value) - parseNum(r.querySelector('.td-debit')?.value);
+  });
+
+  let diff = targetClose - currentTotal;
+  if (Math.abs(diff) < 0.01) return; // Already perfect
+
+  // Intelligent target selection: avoid the row the user is currently editing
+  // and prioritize non-salary rows (unless there are no others)
+  let candidates = rows.filter(r => r !== excludeRow);
+  let nonSalary = candidates.filter(r => !r.querySelector('.td-desc')?.value.toUpperCase().includes('SALARY'));
+
+  const targetRow = nonSalary.length > 0 ? nonSalary[nonSalary.length - 1] : candidates[candidates.length - 1];
+  if (!targetRow) return;
+
+  const crInp = targetRow.querySelector('.td-credit');
+  const drInp = targetRow.querySelector('.td-debit');
+  let currentCr = parseNum(crInp.value);
+  let currentDr = parseNum(drInp.value);
+
+  if (diff > 0) {
+    // Need more credit or less debit
+    if (currentDr >= diff) {
+      drInp.value = (currentDr - diff).toFixed(2);
+      if (drInp.value == "0.00") drInp.value = "";
+    } else {
+      drInp.value = "";
+      crInp.value = (currentCr + (diff - currentDr)).toFixed(2);
+    }
+  } else {
+    // Need more debit or less credit (diff is negative)
+    const absDiff = Math.abs(diff);
+    if (currentCr >= absDiff) {
+      crInp.value = (currentCr - absDiff).toFixed(2);
+      if (crInp.value == "0.00") crInp.value = "";
+    } else {
+      crInp.value = "";
+      drInp.value = (currentDr + (absDiff - currentCr)).toFixed(2);
+    }
+  }
+
+  rebuildBalances();
+  if (!silent) toast('Statement tallied!', 'success');
+}
+
+
+/**
+ * Tally to a specific row: adjust this row so that the final balance matches target.
+ */
+function tallyToThisRow(row) {
+  const targetClose = parseNum(document.getElementById('dl-closing')?.value);
+  if (!targetClose && targetClose !== 0) return toast('Set Target Closing Balance first.', 'info');
+
+  const openBal = parseNum(document.getElementById('dl-opening')?.value);
+  const allRows = Array.from(txBody.querySelectorAll('tr'));
+
+  let otherNet = openBal;
+  allRows.forEach(r => {
+    if (r === row) return;
+    otherNet += parseNum(r.querySelector('.td-credit').value) - parseNum(r.querySelector('.td-debit').value);
+  });
+
+  // targetClose = otherNet + thisCr - thisDr
+  // thisCr - thisDr = targetClose - otherNet
+  const needed = targetClose - otherNet;
+
+  const crInp = row.querySelector('.td-credit');
+  const drInp = row.querySelector('.td-debit');
+
+  if (needed >= 0) {
+    crInp.value = needed.toFixed(2);
+    drInp.value = '';
+  } else {
+    crInp.value = '';
+    drInp.value = Math.abs(needed).toFixed(2);
+  }
+
+  rebuildBalances();
+  toast('Row adjusted to tally balance!', 'success');
+}
+
 
 function updateTxCountBadge() {
   const cnt = txBody.querySelectorAll('tr').length;

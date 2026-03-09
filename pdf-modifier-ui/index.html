@@ -681,6 +681,16 @@
                 style="background:rgba(234,179,8,0.15);border:1px solid rgba(234,179,8,0.3);color:#facc15;padding:5px 14px;border-radius:7px;font-size:0.76rem;font-weight:600;cursor:pointer;">
                 🎯 Smart Adjust
               </button>
+              <button class="btn-sm" onclick="tallyBalance()"
+                style="background:rgba(99,102,241,0.25);border:1px solid rgba(99,102,241,0.5);color:#fff;padding:5px 14px;border-radius:7px;font-size:0.76rem;font-weight:700;cursor:pointer;">
+                ⚖️ Tally Balance
+              </button>
+              <label
+                style="display:flex;align-items:center;gap:6px;font-size:0.75rem;cursor:pointer;color:rgba(255,255,255,0.6);margin-left:8px;background:rgba(255,255,255,0.05);padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);">
+                <input type="checkbox" id="cb-auto-tally" checked
+                  style="width:15px;height:15px;cursor:pointer;accent-color:#818cf8;" />
+                <span>Lock Closing Balance</span>
+              </label>
               <button class="btn-sm" id="btn-import-from-pdf"
                 style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);color:#a78bfa;padding:5px 14px;border-radius:7px;font-size:0.76rem;font-weight:600;cursor:pointer;">
                 📥 Import PDF
@@ -863,6 +873,11 @@
           <div class="bal-item">
             <div class="bal-label">Rows</div>
             <div class="bal-value" id="lbp-count">0</div>
+          </div>
+          <div class="bal-item" id="lbp-diff-wrap"
+            style="display:none; background:rgba(248,113,113,0.1); border-left:1px solid rgba(255,255,255,0.1); padding-left:14px;">
+            <div class="bal-label" style="color:#f87171;">Gap (Needs Tally)</div>
+            <div class="bal-value red" id="lbp-diff">₹ 0.00</div>
           </div>
         </div>
 
