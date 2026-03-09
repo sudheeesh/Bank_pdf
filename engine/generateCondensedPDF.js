@@ -427,8 +427,6 @@ async function generateCondensedPDF(opts) {
       "--disable-dev-shm-usage",
       "--disable-accelerated-2d-canvas",
       "--no-first-run",
-      "--no-zygote",
-      "--single-process",
       "--disable-gpu"
     ],
   });
@@ -445,8 +443,9 @@ async function generateCondensedPDF(opts) {
 
     return pdfBuffer;
   } finally {
-    await browser.close();
+    if (browser) await browser.close();
   }
+
 }
 
 module.exports = { generateCondensedPDF, inr };
