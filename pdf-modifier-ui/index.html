@@ -756,9 +756,44 @@
               </div>
               <div class="fg">
                 <label style="font-size:0.7rem;color:rgba(16,185,129,0.9);font-weight:700;">💼 Monthly Salary
-                  (₹)</label>
+                  (Global)</label>
                 <input type="number" id="ag-salary" placeholder="100000"
                   style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.4);color:#4ade80;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;font-weight:bold;" />
+              </div>
+            </div>
+
+            <!-- Monthly Salary Breakdown (6 Columns) for Auto-Generate -->
+            <div
+              style="display:grid;grid-template-columns:repeat(6, 1fr);gap:10px;margin-bottom:20px;padding:12px;background:rgba(16,185,129,0.03);border:1px solid rgba(16,185,129,0.1);border-radius:10px;">
+              <div class="fg">
+                <label style="font-size:0.65rem;color:rgba(16,185,129,0.7);">Month 1 (₹)</label>
+                <input type="number" id="ag-salary-1" class="ag-month-salary" placeholder="M1"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(16,185,129,0.2);color:#4ade80;padding:5px 8px;border-radius:5px;font-size:0.75rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.65rem;color:rgba(16,185,129,0.7);">Month 2 (₹)</label>
+                <input type="number" id="ag-salary-2" class="ag-month-salary" placeholder="M2"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(16,185,129,0.2);color:#4ade80;padding:5px 8px;border-radius:5px;font-size:0.75rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.65rem;color:rgba(16,185,129,0.7);">Month 3 (₹)</label>
+                <input type="number" id="ag-salary-3" class="ag-month-salary" placeholder="M3"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(16,185,129,0.2);color:#4ade80;padding:5px 8px;border-radius:5px;font-size:0.75rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.65rem;color:rgba(16,185,129,0.7);">Month 4 (₹)</label>
+                <input type="number" id="ag-salary-4" class="ag-month-salary" placeholder="M4"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(16,185,129,0.2);color:#4ade80;padding:5px 8px;border-radius:5px;font-size:0.75rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.65rem;color:rgba(16,185,129,0.7);">Month 5 (₹)</label>
+                <input type="number" id="ag-salary-5" class="ag-month-salary" placeholder="M5"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(16,185,129,0.2);color:#4ade80;padding:5px 8px;border-radius:5px;font-size:0.75rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.65rem;color:rgba(16,185,129,0.7);">Month 6 (₹)</label>
+                <input type="number" id="ag-salary-6" class="ag-month-salary" placeholder="M6"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(16,185,129,0.2);color:#4ade80;padding:5px 8px;border-radius:5px;font-size:0.75rem;width:100%;" />
               </div>
             </div>
             <div style="display:flex;gap:10px;">
@@ -808,11 +843,47 @@
                   style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;" />
               </div>
               <div class="fg">
-                <label style="font-size:0.7rem;color:rgba(234,179,8,0.9);font-weight:700;">💼 Monthly Salary (₹)</label>
+                <label style="font-size:0.7rem;color:rgba(234,179,8,0.9);font-weight:700;">💼 Monthly Salary</label>
                 <input type="number" id="sa-salary" placeholder="100000"
                   style="background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.4);color:#facc15;padding:6px 10px;border-radius:6px;font-size:0.8rem;width:100%;font-weight:bold;" />
               </div>
             </div>
+
+            <!-- Monthly Salary Breakdown (6 Columns) for Smart Adjust -->
+            <div
+              style="display:grid;grid-template-columns:repeat(6, 1fr);gap:10px;margin-bottom:20px;padding:12px;background:rgba(234,179,8,0.03);border:1px solid rgba(234,179,8,0.1);border-radius:10px;">
+              <div class="fg">
+                <label style="font-size:0.65rem;color:rgba(234,179,8,0.7);">Month 1 (₹)</label>
+                <input type="number" id="sa-salary-1" class="sa-month-salary" placeholder="M1"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(234,179,8,0.2);color:#facc15;padding:5px 8px;border-radius:5px;font-size:0.75rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.65rem;color:rgba(234,179,8,0.7);">Month 2 (₹)</label>
+                <input type="number" id="sa-salary-2" class="sa-month-salary" placeholder="M2"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(234,179,8,0.2);color:#facc15;padding:5px 8px;border-radius:5px;font-size:0.75rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.65rem;color:rgba(234,179,8,0.7);">Month 3 (₹)</label>
+                <input type="number" id="sa-salary-3" class="sa-month-salary" placeholder="M3"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(234,179,8,0.2);color:#facc15;padding:5px 8px;border-radius:5px;font-size:0.75rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.65rem;color:rgba(234,179,8,0.7);">Month 4 (₹)</label>
+                <input type="number" id="sa-salary-4" class="sa-month-salary" placeholder="M4"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(234,179,8,0.2);color:#facc15;padding:5px 8px;border-radius:5px;font-size:0.75rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.65rem;color:rgba(234,179,8,0.7);">Month 5 (₹)</label>
+                <input type="number" id="sa-salary-5" class="sa-month-salary" placeholder="M5"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(234,179,8,0.2);color:#facc15;padding:5px 8px;border-radius:5px;font-size:0.75rem;width:100%;" />
+              </div>
+              <div class="fg">
+                <label style="font-size:0.65rem;color:rgba(234,179,8,0.7);">Month 6 (₹)</label>
+                <input type="number" id="sa-salary-6" class="sa-month-salary" placeholder="M6"
+                  style="background:rgba(0,0,0,0.2);border:1px solid rgba(234,179,8,0.2);color:#facc15;padding:5px 8px;border-radius:5px;font-size:0.75rem;width:100%;" />
+              </div>
+            </div>
+
             <div style="display:flex;gap:10px;">
               <button id="btn-run-smart-adjust"
                 style="background:#facc15;color:#000;border:none;padding:7px 16px;border-radius:6px;font-size:0.8rem;font-weight:bold;cursor:pointer;">Adjust

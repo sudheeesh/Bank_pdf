@@ -361,7 +361,8 @@ router.post("/api/build-statement", async (req, res) => {
    ==================================================== */
 router.post("/api/generate-transactions", (req, res) => {
     try {
-        const { startMonth, endMonth, openingBalance, closingBalance, maxMonthlyDebit, maxMonthlyCredit, customDebitDescs, customCreditDescs, maxTxnDebit, maxTxnCredit, monthlySalary, targetPages } = req.body;
+        console.log("[API] generate-transactions body:", JSON.stringify(req.body));
+        const { startMonth, endMonth, openingBalance, closingBalance, maxMonthlyDebit, maxMonthlyCredit, customDebitDescs, customCreditDescs, maxTxnDebit, maxTxnCredit, monthlySalary, monthlySalaries, targetPages } = req.body;
         if (!startMonth || !endMonth || closingBalance === undefined) {
             return res.status(400).json({ error: "Missing required fields for generation." });
         }
@@ -377,11 +378,23 @@ router.post("/api/generate-transactions", (req, res) => {
             maxTxnCredit: maxTxnCredit ? Number(maxTxnCredit) : Infinity,
             targetPages: Number(targetPages) || 8,
             monthlySalary: Number(monthlySalary) || 0,
+            monthlySalaries: Array.isArray(monthlySalaries) ? monthlySalaries : [],
             customDebitDescs,
             customCreditDescs
         });
 
-        res.json({ success: true, transactions: generated.transactions, openingBalance: generated.openingBalance });
+        const providedOpening = (openingBalance !== "" && openingBalance !== undefined) ? Number(openingBalance) : null;
+        const openingBalanceAdjusted = providedOpening !== null && Math.abs(providedOpening - generated.openingBalance) > 0.01;
+        res.json({
+            success: true,
+            transactions: generated.transactions,
+            openingBalance: generated.openingBalance,
+            openingBalanceAdjusted,
+            originalOpeningBalance: openingBalanceAdjusted ? providedOpening : undefined,
+            warning: openingBalanceAdjusted
+                ? `Opening balance auto-adjusted to ₹${generated.openingBalance.toLocaleString('en-IN')} — salary credits make closing=${Number(closingBalance).toLocaleString('en-IN')} unreachable from ₹${providedOpening.toLocaleString('en-IN')} within per-transaction limits.`
+                : undefined
+        });
     } catch (err) {
         console.error("[generate-transactions]", err);
         res.status(500).json({ error: err.message });

@@ -351,6 +351,11 @@ document.getElementById('btn-run-auto-gen').addEventListener('click', async () =
   const customDebitDescs = existingRows.map(r => r.querySelector('.td-desc')?.value).filter(Boolean);
   const customCreditDescs = customDebitDescs; // For simplicity, mix them or separate if needed
 
+  const monthlySalaries = [1, 2, 3, 4, 5, 6].map(i => {
+    const val = document.getElementById(`ag-salary-${i}`)?.value;
+    return val ? parseNum(val) : null;
+  });
+
   const payload = {
     startMonth: document.getElementById('ag-start').value,
     endMonth: document.getElementById('ag-end').value,
@@ -362,6 +367,7 @@ document.getElementById('btn-run-auto-gen').addEventListener('click', async () =
     maxTxnCredit: document.getElementById('ag-max-cr-txn')?.value,
     targetPages: document.getElementById('ag-target-pages')?.value || 8,
     monthlySalary: document.getElementById('ag-salary')?.value || 0,
+    monthlySalaries, // array of 6 elements
     customDebitDescs,
     customCreditDescs
   };
@@ -404,10 +410,19 @@ document.getElementById('btn-run-auto-gen').addEventListener('click', async () =
     if (dlClose) dlClose.value = payload.closingBalance;
 
     rebuildBalances();
+    if (document.getElementById('cb-auto-tally')?.checked) tallyBalance(true);
+
     updateTxCountBadge();
     agPanel.style.display = 'none';
     hideLoading();
-    toast(`✅ Generated ${data.transactions.length} realistic transactions!`, 'success');
+
+    const salaryCount = data.transactions.filter(t => (t.desc || '').includes('SALARY')).length;
+    toast(`✅ Generated ${data.transactions.length} transactions (${salaryCount} salaries found)!`, 'success');
+
+    // Warn if opening balance was auto-adjusted
+    if (data.openingBalanceAdjusted) {
+      setTimeout(() => toast(`⚠️ Opening balance adjusted: ${data.warning}`, 'info'), 600);
+    }
   } catch (err) {
     hideLoading();
     toast(err.message, 'error');
@@ -424,6 +439,11 @@ document.getElementById('btn-cancel-smart-adjust').addEventListener('click', () 
   saPanel.style.display = 'none';
 });
 document.getElementById('btn-run-smart-adjust').addEventListener('click', async () => {
+  const monthlySalaries = [1, 2, 3, 4, 5, 6].map(i => {
+    const val = document.getElementById(`sa-salary-${i}`)?.value;
+    return val ? parseNum(val) : null;
+  });
+
   const payload = {
     openingBalance: parseNum(document.getElementById('sa-open').value),
     closingBalance: document.getElementById('sa-close').value ? parseNum(document.getElementById('sa-close').value) : null,
@@ -432,6 +452,7 @@ document.getElementById('btn-run-smart-adjust').addEventListener('click', async 
     maxTxnDebit: document.getElementById('sa-max-dr-txn')?.value ? parseNum(document.getElementById('sa-max-dr-txn').value) : null,
     maxTxnCredit: document.getElementById('sa-max-cr-txn')?.value ? parseNum(document.getElementById('sa-max-cr-txn').value) : null,
     monthlySalary: document.getElementById('sa-salary')?.value ? parseNum(document.getElementById('sa-salary').value) : 0,
+    monthlySalaries: monthlySalaries
   };
 
   const rows = Array.from(txBody.querySelectorAll('tr'));
@@ -483,6 +504,8 @@ document.getElementById('btn-run-smart-adjust').addEventListener('click', async 
     if (dlOpen) dlOpen.value = payload.openingBalance;
 
     rebuildBalances();
+    if (document.getElementById('cb-auto-tally')?.checked) tallyBalance(true);
+
     saPanel.style.display = 'none';
     hideLoading();
     toast(`✅ Adjusted values for ${data.transactions.length} transactions!`, 'success');
@@ -606,6 +629,10 @@ function rebuildBalances() {
 /** 
  * Tally to Goal: Adjust another row to make the final balance match the target.
  */
+/** 
+ * Tally to Goal: Adjust multiple rows proportional to their current value.
+ * This prevents rows from "vanishing" or becoming "bulk" amounts.
+ */
 function tallyBalance(silent = false, excludeRow = null) {
   const targetClose = parseNum(document.getElementById('dl-closing')?.value);
   if (!targetClose && targetClose !== 0) {
@@ -614,53 +641,174 @@ function tallyBalance(silent = false, excludeRow = null) {
   }
 
   const openBal = parseNum(document.getElementById('dl-opening')?.value);
-  const rows = Array.from(txBody.querySelectorAll('tr'));
-  if (rows.length < (excludeRow ? 2 : 1)) return; // Need at least one row, or two if we exclude one
+  const allRows = Array.from(txBody.querySelectorAll('tr'));
+  if (allRows.length === 0) return;
 
+  // 1. Calculate current totals and state
   let currentTotal = openBal;
-  rows.forEach(r => {
-    currentTotal += parseNum(r.querySelector('.td-credit')?.value) - parseNum(r.querySelector('.td-debit')?.value);
+  let months = {};
+  const getMonth = (r) => {
+    const val = r.querySelector('.td-date')?.value;
+    const m = val?.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+    return m ? `${m[3].length === 2 ? '20' + m[3] : m[3]}-${m[2].padStart(2, '0')}` : 'UNK';
+  };
+
+  allRows.forEach(r => {
+    const dr = parseNum(r.querySelector('.td-debit')?.value);
+    const cr = parseNum(r.querySelector('.td-credit')?.value);
+    currentTotal += cr - dr;
+    const mKey = getMonth(r);
+    if (!months[mKey]) months[mKey] = { dr: 0, cr: 0 };
+    months[mKey].dr += dr;
+    months[mKey].cr += cr;
   });
 
   let diff = targetClose - currentTotal;
-  if (Math.abs(diff) < 0.01) return; // Already perfect
+  if (Math.abs(diff) < 0.01) return;
 
-  // Intelligent target selection: avoid the row the user is currently editing
-  // and prioritize non-salary rows (unless there are no others)
-  let candidates = rows.filter(r => r !== excludeRow);
-  let nonSalary = candidates.filter(r => !r.querySelector('.td-desc')?.value.toUpperCase().includes('SALARY'));
+  // Limits from UI
+  const getLim = (id, def) => {
+    const el = document.getElementById(id);
+    return el && el.value ? parseNum(el.value) : def;
+  };
+  const maxMonthlyDebit = getLim('sa-max-dr', getLim('ag-max-dr', 1000000));
+  const maxMonthlyCredit = getLim('sa-max-cr', getLim('ag-max-cr', 1000000));
+  const maxTxnDebit = getLim('sa-max-dr-txn', Infinity);
+  const maxTxnCredit = getLim('sa-max-cr-txn', Infinity);
 
-  const targetRow = nonSalary.length > 0 ? nonSalary[nonSalary.length - 1] : candidates[candidates.length - 1];
-  if (!targetRow) return;
+  // 2. Identify candidates and calculate ROOM
+  // Room is how much we can change a row without violating limits or zeroing it out too much.
+  const candidates = allRows.filter(r => r !== excludeRow);
+  const pool = candidates.map(r => {
+    const dr = parseNum(r.querySelector('.td-debit')?.value);
+    const cr = parseNum(r.querySelector('.td-credit')?.value);
+    const desc = r.querySelector('.td-desc')?.value.toUpperCase() || "";
+    const mKey = getMonth(r);
+    const mTotal = months[mKey];
 
-  const crInp = targetRow.querySelector('.td-credit');
-  const drInp = targetRow.querySelector('.td-debit');
-  let currentCr = parseNum(crInp.value);
-  let currentDr = parseNum(drInp.value);
+    // We strictly PROTECT salary rows. Weight 0 means they are never adjusted by the balancer.
+    const weight = desc.includes("SALARY") ? 0 : 1.0;
 
+    let roomIncreaseNet = 0; // Reducing Dr or Increasing Cr
+    let roomDecreaseNet = 0; // Reducing Cr or Increasing Dr
+
+    // Potential for IncreaseNet:
+    // a) Reduce Dr (down to a floor of 100)
+    roomIncreaseNet += Math.max(0, dr - 100);
+    // b) Increase Cr (limited by monthly and txn limits)
+    const crLimRoom = Math.max(0, maxMonthlyCredit - (mTotal.cr || 0));
+    const crTxnRoom = Math.max(0, maxTxnCredit - cr);
+    roomIncreaseNet += Math.min(crLimRoom, crTxnRoom);
+
+    // Potential for DecreaseNet:
+    // a) Reduce Cr (down to floor)
+    roomDecreaseNet += Math.max(0, cr - 100);
+    // b) Increase Dr (limited by limits)
+    const drLimRoom = Math.max(0, maxMonthlyDebit - (mTotal.dr || 0));
+    const drTxnRoom = Math.max(0, maxTxnDebit - dr);
+    roomDecreaseNet += Math.min(drLimRoom, drTxnRoom);
+
+    return { row: r, dr, cr, mKey, weight, roomIncreaseNet, roomDecreaseNet };
+  });
+
+  // 3. Apply changes proportionally
   if (diff > 0) {
-    // Need more credit or less debit
-    if (currentDr >= diff) {
-      drInp.value = (currentDr - diff).toFixed(2);
-      if (drInp.value == "0.00") drInp.value = "";
-    } else {
-      drInp.value = "";
-      crInp.value = (currentCr + (diff - currentDr)).toFixed(2);
+    const totalRoom = pool.reduce((s, p) => s + (p.roomIncreaseNet * p.weight), 0);
+    if (totalRoom <= 0) {
+      if (!silent) toast('No room to increase balance. Increase "Max Credit/Month" or "Max Debit" limits.', 'warning');
+      return;
     }
+
+    const factor = Math.min(1, diff / totalRoom);
+    pool.forEach(p => {
+      const jitter = 0.9 + Math.random() * 0.2;
+      let adjustment = Math.floor(p.roomIncreaseNet * p.weight * factor * jitter);
+      if (adjustment <= 0 && factor > 0.05) adjustment = 1;
+      if (adjustment <= 0) return;
+
+      const drInp = p.row.querySelector('.td-debit');
+      const crInp = p.row.querySelector('.td-credit');
+
+      if (p.dr > 0) {
+        const drReduction = Math.min(p.dr > 100 ? Math.floor(p.dr - 100) : 0, adjustment);
+        if (drReduction > 0) {
+          p.dr = Math.round(p.dr - drReduction);
+          drInp.value = p.dr > 0 ? p.dr.toString() : "";
+          adjustment -= drReduction;
+          diff -= drReduction;
+        }
+      }
+      if (adjustment > 0 && p.cr > 0) {
+        p.cr = Math.round(p.cr + adjustment);
+        crInp.value = p.cr.toString();
+        diff -= adjustment;
+      }
+    });
+
   } else {
-    // Need more debit or less credit (diff is negative)
     const absDiff = Math.abs(diff);
-    if (currentCr >= absDiff) {
-      crInp.value = (currentCr - absDiff).toFixed(2);
-      if (crInp.value == "0.00") crInp.value = "";
-    } else {
-      crInp.value = "";
-      drInp.value = (currentDr + (absDiff - currentCr)).toFixed(2);
+    const totalRoom = pool.reduce((s, p) => s + (p.roomDecreaseNet * p.weight), 0);
+    if (totalRoom <= 0) {
+      if (!silent) toast('No room to decrease balance. Increase "Max Debit/Month" limits.', 'warning');
+      return;
+    }
+
+    const factor = Math.min(1, absDiff / totalRoom);
+    pool.forEach(p => {
+      const jitter = 0.9 + Math.random() * 0.2;
+      let adjustment = Math.floor(p.roomDecreaseNet * p.weight * factor * jitter);
+      if (adjustment <= 0 && factor > 0.05) adjustment = 1;
+      if (adjustment <= 0) return;
+
+      const drInp = p.row.querySelector('.td-debit');
+      const crInp = p.row.querySelector('.td-credit');
+
+      if (p.cr > 0) {
+        const crReduction = Math.min(p.cr > 100 ? Math.floor(p.cr - 100) : 0, adjustment);
+        if (crReduction > 0) {
+          p.cr = Math.round(p.cr - crReduction);
+          crInp.value = p.cr > 0 ? p.cr.toString() : "";
+          adjustment -= crReduction;
+          diff += crReduction;
+        }
+      }
+      if (adjustment > 0 && p.dr > 0) {
+        p.dr = Math.round(p.dr + adjustment);
+        drInp.value = p.dr.toString();
+        diff += adjustment;
+      }
+    });
+  }
+
+  // 4. Dust Absorption: Clean up remaining diff (often paise/cents)
+  diff = Math.round(diff * 100) / 100;
+  if (Math.abs(diff) > 0.005) {
+    const lastResort = pool.filter(p => !p.row.querySelector('.td-desc')?.value.toUpperCase().includes('SALARY')).pop() || pool[pool.length - 1];
+    if (lastResort) {
+      const drInp = lastResort.row.querySelector('.td-debit');
+      const crInp = lastResort.row.querySelector('.td-credit');
+      let dr = parseNum(drInp.value);
+      let cr = parseNum(crInp.value);
+
+      if (diff > 0) {
+        cr = Math.round((cr + diff) * 100) / 100;
+        crInp.value = cr.toFixed(2);
+      } else {
+        dr = Math.round((dr + Math.abs(diff)) * 100) / 100;
+        drInp.value = dr.toFixed(2);
+      }
+      diff = 0;
     }
   }
 
   rebuildBalances();
-  if (!silent) toast('Statement tallied!', 'success');
+  if (!silent) {
+    if (Math.abs(diff) > 0.01) {
+      toast(`Adjustment spread out, but ₹${diff.toFixed(2)} remains. Consider relaxing limits.`, 'info');
+    } else {
+      toast('Statement balanced perfectly across all rows!', 'success');
+    }
+  }
 }
 
 
@@ -706,8 +854,75 @@ function updateTxCountBadge() {
   if (badge) badge.textContent = cnt + ' row' + (cnt === 1 ? '' : 's');
 }
 
-/* Listen to opening balance change */
-document.getElementById('dl-opening')?.addEventListener('input', rebuildBalances);
+/* Listen to opening/closing/lock changes to maintain tally */
+document.getElementById('dl-opening')?.addEventListener('input', () => {
+  rebuildBalances();
+  if (document.getElementById('cb-auto-tally')?.checked) tallyBalance(true);
+});
+document.getElementById('dl-closing')?.addEventListener('input', () => {
+  rebuildBalances();
+  if (document.getElementById('cb-auto-tally')?.checked) tallyBalance(true);
+});
+document.getElementById('cb-auto-tally')?.addEventListener('change', (e) => {
+  if (e.target.checked) tallyBalance(false);
+});
+
+// Helper to get all salary rows sorted chronologically
+function getSalaryRows() {
+  const rows = Array.from(txBody.querySelectorAll('tr'));
+  return rows.filter(r => (r.querySelector('.td-desc')?.value.toUpperCase() || "").includes('SALARY'))
+    .sort((a, b) => {
+      const dateA = a.querySelector('.td-date')?.value || "";
+      const dateB = b.querySelector('.td-date')?.value || "";
+      // Simple date comparison YYYY-MM-DD or DD-MM-YYYY
+      const cleanDate = (d) => d.split(/[-\/]/).reverse().join('-');
+      return cleanDate(dateA).localeCompare(cleanDate(dateB));
+    });
+}
+
+// Update specific monthly salary rows (M1 to M6)
+document.querySelectorAll('.ag-month-salary').forEach((inp, idx) => {
+  inp.addEventListener('change', (e) => {
+    const newSalary = parseNum(e.target.value);
+    if (newSalary <= 0) return;
+
+    const salaryRows = getSalaryRows();
+    const targetRow = salaryRows[idx]; // M1 matches 1st salary row, etc.
+
+    if (targetRow) {
+      targetRow.querySelector('.td-credit').value = newSalary.toString();
+      targetRow.querySelector('.td-debit').value = "";
+      rebuildBalances();
+      if (document.getElementById('cb-auto-tally')?.checked) tallyBalance(true);
+      toast(`Updated Month ${idx + 1} salary to ₹${newSalary}`, 'success');
+    } else {
+      toast(`No Salary row found for Month ${idx + 1}.`, 'warning');
+    }
+  });
+});
+
+// Proactively update salary rows when user changes the monthly salary input (Global)
+document.getElementById('ag-salary')?.addEventListener('change', (e) => {
+  const newSalary = parseNum(e.target.value);
+  if (newSalary <= 0) return;
+
+  const salaryRows = getSalaryRows();
+  if (salaryRows.length === 0) return toast('No Salary rows found to update.', 'warning');
+
+  salaryRows.forEach(row => {
+    row.querySelector('.td-credit').value = newSalary.toString();
+    row.querySelector('.td-debit').value = "";
+  });
+
+  // Also sync the 6 small inputs
+  document.querySelectorAll('.ag-month-salary').forEach(inp => inp.value = newSalary);
+
+  rebuildBalances();
+  if (document.getElementById('cb-auto-tally')?.checked) {
+    tallyBalance(true);
+  }
+  toast(`Updated all ${salaryRows.length} salary rows to match ₹${newSalary}`, 'info');
+});
 
 /* Pages slider */
 const dlSlider = document.getElementById('dl-max-pages');
