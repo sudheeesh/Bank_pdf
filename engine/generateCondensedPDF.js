@@ -12,8 +12,16 @@ const puppeteer = require("puppeteer");
 const https = require("https");
 const http = require("http");
 const { buildSbiHTML } = require("./buildSbiHTML");
+const { buildFederalHTML } = require("./buildFederalHTML");
+const { detectBank } = require("./detectBank");
 
-const SBI_LOGO_URL = "https://res.cloudinary.com/dpu9ikeqe/image/upload/v1772833867/sbi_logo_no_bg_r3oysu.png";
+const LOGO_URLS = {
+  sbi:     "https://res.cloudinary.com/dpu9ikeqe/image/upload/v1772833867/sbi_logo_no_bg_r3oysu.png",
+  federal: "https://upload.wikimedia.org/wikipedia/en/thumb/0/09/Federal_Bank_Logo.svg/320px-Federal_Bank_Logo.svg.png",
+};
+
+// Keep backward compat
+const SBI_LOGO_URL = LOGO_URLS.sbi;
 
 // Fetch an image URL and return a base64 data URI so Puppeteer can embed it inline
 function fetchAsBase64(url) {
@@ -412,11 +420,36 @@ ${pageHTMLs}
 
 // ---- Main export ----
 async function generateCondensedPDF(opts) {
-  // Fetch logo as base64 so Puppeteer can embed it inline (setContent blocks external URLs)
-  let logoSrc = SBI_LOGO_URL;
-  try { logoSrc = await fetchAsBase64(SBI_LOGO_URL); } catch (e) { console.warn("[logo] fetch failed:", e.message); }
+  // ── Detect bank ──────────────────────────────────────────────────────────
+  const bankInfo = detectBank('', {
+    bankName: opts.bankName || '',
+    ifsc:     opts.ifsc || '',
+  });
+  const bankKey = bankInfo.key; // 'sbi' | 'federal' | ...
+  console.log(`[PDF] Detected bank: ${bankInfo.displayName} (key: ${bankKey})`);
 
-  const html = buildSbiHTML({ ...opts, logoSrc });
+  // ── Fetch the correct logo ────────────────────────────────────────────────
+  const logoUrl = LOGO_URLS[bankKey] || LOGO_URLS.sbi;
+  let logoSrc = '';
+  try {
+    console.log('[logo] Fetching logo for', bankInfo.displayName, '…');
+    logoSrc = await Promise.race([
+      fetchAsBase64(logoUrl),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('logo fetch timed out after 30s')), 30000))
+    ]);
+    console.log('[logo] Fetched OK (' + Math.round(logoSrc.length / 1024) + ' KB base64)');
+  } catch (e) {
+    console.warn('[logo] Could not fetch logo, PDF will render without it:', e.message);
+  }
+
+  // ── Build HTML using the correct template ─────────────────────────────────
+  let html;
+  if (bankKey === 'federal') {
+    html = buildFederalHTML({ ...opts, logoSrc });
+  } else {
+    // Default: SBI (and any unrecognised bank falls back to SBI layout)
+    html = buildSbiHTML({ ...opts, logoSrc });
+  }
 
   const browser = await puppeteer.launch({
     headless: "new",
@@ -427,25 +460,37 @@ async function generateCondensedPDF(opts) {
       "--disable-dev-shm-usage",
       "--disable-accelerated-2d-canvas",
       "--no-first-run",
-      "--disable-gpu"
+      "--no-zygote",
+      "--disable-gpu",
+      "--disable-extensions",
+      "--disable-background-networking",
     ],
   });
 
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle2", timeout: 45000 });
+
+    // Use 'domcontentloaded' — NOT 'networkidle2'.
+    // 'networkidle2' waits for ALL network requests to stop; on a server this hangs
+    // if any external resource (fonts, CDN images) is slow or blocked.
+    // Since we embed the logo as base64 inline, there are NO external requests — so
+    // 'domcontentloaded' fires immediately once the HTML is parsed.
+    await page.setContent(html, {
+      waitUntil: "domcontentloaded",
+      timeout: 90000,
+    });
 
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
       margin: { top: "0", right: "0", bottom: "0", left: "0" },
+      timeout: 90000,
     });
 
     return pdfBuffer;
   } finally {
-    if (browser) await browser.close();
+    try { await browser.close(); } catch (_) {}
   }
-
 }
 
 module.exports = { generateCondensedPDF, inr };

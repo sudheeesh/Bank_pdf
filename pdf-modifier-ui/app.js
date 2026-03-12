@@ -170,6 +170,7 @@ async function handleUpload(file) {
       state.originalName = data.originalName;
       state.pages = data.pages;
       state.accountInfo = data.accountInfo || {};
+      state.detectedBank = data.detectedBank || { key: 'unknown', displayName: 'Unknown Bank' };
 
       progress.style.display = 'none';
       content.style.display = 'block';
@@ -178,6 +179,16 @@ async function handleUpload(file) {
       document.getElementById('file-meta').textContent = `${data.pages} page(s) · ${fmtBytes(data.size)}`;
       document.getElementById('file-card').style.display = 'flex';
 
+      // Show detected bank badge
+      const bankBadge = document.getElementById('detected-bank-badge');
+      if (bankBadge) {
+        const bk = state.detectedBank;
+        const badgeColor = bk.key === 'sbi' ? '#1a3a6b' : bk.key === 'federal' ? '#003478' : bk.key === 'hdfc' ? '#004c8f' : '#555';
+        bankBadge.innerHTML = `🏦 <strong>${bk.displayName}</strong> detected`;
+        bankBadge.style.background = badgeColor;
+        bankBadge.style.display = 'inline-block';
+      }
+
       // Auto-fill account info
       autoFillAccountInfo(data.accountInfo || {});
 
@@ -185,7 +196,7 @@ async function handleUpload(file) {
       document.getElementById('smart-mode-sections').style.display = 'block';
       switchBuildTab('panel-acct');
 
-      toast(`✅ PDF loaded — account info extracted!`, 'success');
+      toast(`✅ PDF loaded — ${state.detectedBank.displayName} statement detected!`, 'success');
       setStatus('Ready to build');
 
       // Auto import transactions so they don't have to click

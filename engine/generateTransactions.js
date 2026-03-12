@@ -107,569 +107,283 @@ function getDaysInMonth(year, month) {
     return new Date(year, month + 1, 0).getDate();
 }
 
-function distributeAmount(total, n, minVal = 100, maxVal = Infinity, forceN = false) {
-    if (total <= 0) return Array(n).fill(0);
-
-    // dynamically increase n if total cannot fit inside maxVal limit, or to create more variance
-    if (!forceN && maxVal !== Infinity) {
-        const varianceTarget = maxVal * (0.6 + Math.random() * 0.3); // aim for rows around 60-90% of maxVal to avoid always hitting exactly 3000
-        const neededRows = Math.ceil(total / varianceTarget);
-        if (n < neededRows) n = neededRows;
-    } else if (!forceN && total > maxVal * n) {
-        // Expand the row count comfortably so not all rows are forced to identical maxVal
-        n = Math.ceil(total / (maxVal * 0.8));
+/**
+ * distributeAmount
+ * Dynamically determines how many transactions are needed to hit 'total' 
+ * while keeping each chunk between minVal and maxVal.
+ */
+/**
+ * distributeAmount
+ * Dynamically determines how many transactions are needed to hit 'total' 
+ * while keeping each chunk between minVal and maxVal.
+ */
+function distributeAmount(total, minVal = 50, maxVal = 2990, maxCount = Infinity) {
+    if (total <= 1) return [];
+    
+    // Determine a random target for average transaction size (60-90% of maxVal)
+    const targetAvg = minVal + (Math.random() * (maxVal - minVal) * 0.7);
+    let n = Math.max(1, Math.ceil(total / targetAvg));
+    
+    // Limit number of parts generated
+    if (n > maxCount) n = Math.max(1, maxCount);
+    
+    // Ensure total can actually be split into N parts of at least minVal
+    if (total < n * minVal) {
+        n = Math.floor(total / minVal);
     }
-
-    // If total exceeds max bounds, limit it to avoid breaking transaction limits
-    if (forceN && total > maxVal * n) {
-        total = maxVal * n;
-    }
+    if (n < 1) return (total >= minVal) ? [round2(total)] : [];
 
     const parts = Array(n).fill(minVal);
-    let remaining = round2(total - n * minVal);
+    let rem = round2(total - (n * minVal));
 
-    if (remaining < 0) {
-        // total was physically smaller than n * minVal. Split evenly.
-        return parts.map(() => round2(total / n));
+    // Greedy distribution
+    for (let i = 0; i < n && rem > 0; i++) {
+        let room = maxVal - parts[i];
+        let add = Math.min(rem, room * (0.4 + Math.random() * 0.6));
+        if (i === n - 1) add = Math.min(rem, room); // ensure we finish
+        parts[i] = round2(parts[i] + add);
+        rem = round2(rem - add);
     }
 
-    // Distribute remaining randomly among rows that have headroom
-    let passes = 0;
-    while (remaining > 0.01 && passes < 2000) {
-        passes++;
-        const idx = Math.floor(Math.random() * n);
-        const room = maxVal - parts[idx];
-        if (room <= 0.01) continue;
-
-        // Take a highly random chunk size of the available space
-        let maxAddable = Math.min(remaining, room);
-        let chunk = maxAddable * (0.3 + Math.random() * 0.7);
-        if (remaining < 50 || passes > 1500) chunk = maxAddable; // force finish quickly if near pass limit or tiny remainder
-
-        // Try to round to whole numbers for realism
-        let add = chunk;
-        if (add > 10) add = Math.round(add);
-        add = round2(Math.min(remaining, Math.min(room, add)));
-
-        if (add > 0) {
-            parts[idx] = round2(parts[idx] + add);
-            remaining = round2(remaining - add);
+    // If still remaining (rare due to last-item catch), add to any row with room
+    if (rem > 0.01) {
+        for (let i = 0; i < n && rem > 0; i++) {
+            let add = Math.min(rem, maxVal - parts[i]);
+            parts[i] = round2(parts[i] + add);
+            rem = round2(rem - add);
         }
     }
 
-    // Dump any tiny remaining fractions safely
-    if (remaining > 0.01) {
-        for (let i = 0; i < n; i++) {
-            if (remaining <= 0) break;
-            const room = maxVal - parts[i];
-            if (room > 0.01) {
-                const add = Math.min(room, remaining);
-                parts[i] = round2(parts[i] + add);
-                remaining = round2(remaining - add);
-            }
-        }
-    }
-
-    // Shuffle amounts for absolute randomness in output array sequence
-    for (let i = parts.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [parts[i], parts[j]] = [parts[j], parts[i]];
-    }
-
-    // Clean up amounts so they look like realistic human numbers (e.g. 500, 2000)
-    // Keep exactly 1 or 2 rows to absorb the odd decimals to preserve the perfect total.
-    if (parts.length > 2) {
-        let absorbedDiff = 0;
-        const numDecimals = Math.max(1, Math.min(2, Math.floor(parts.length * 0.2)));
-
-        for (let i = numDecimals; i < parts.length; i++) {
-            let original = parts[i];
-
-            // Pick a clean rounding factor based on size
-            let rFactor;
-            if (original > 5000) rFactor = [100, 500, 1000][Math.floor(Math.random() * 3)];
-            else if (original > 1000) rFactor = [50, 100, 500][Math.floor(Math.random() * 3)];
-            else rFactor = [10, 50, 100][Math.floor(Math.random() * 3)];
-
-            let rounded = Math.max(minVal, Math.round(original / rFactor) * rFactor);
-
-            if (rounded <= maxVal) {
-                let diff = original - rounded;
-                absorbedDiff = round2(absorbedDiff + diff);
-                parts[i] = rounded;
-            }
-        }
-
-        // Feed the absorbed difference into the "decimal" rows safely without breaking maxVal/minVal
-        for (let i = 0; i < numDecimals; i++) {
-            if (absorbedDiff > 0) {
-                let space = maxVal - parts[i];
-                let add = Math.min(absorbedDiff, space);
-                parts[i] = round2(parts[i] + add);
-                absorbedDiff = round2(absorbedDiff - add);
-            } else if (absorbedDiff < 0) {
-                let maxRemove = parts[i] - minVal;
-                let toRemove = Math.min(Math.abs(absorbedDiff), maxRemove);
-                parts[i] = round2(parts[i] - toRemove);
-                absorbedDiff = round2(absorbedDiff + toRemove);
-            }
-        }
-
-        // If any odd cents still remain due to constraints, squeeze them anywhere they fit
-        if (Math.abs(absorbedDiff) > 0.01) {
-            for (let i = 0; i < parts.length; i++) {
-                if (absorbedDiff > 0) {
-                    let space = maxVal - parts[i];
-                    let add = Math.min(absorbedDiff, space);
-                    parts[i] = round2(parts[i] + add);
-                    absorbedDiff = round2(absorbedDiff - add);
-                } else if (absorbedDiff < 0) {
-                    let maxRemove = parts[i] - minVal;
-                    let toRemove = Math.min(Math.abs(absorbedDiff), maxRemove);
-                    parts[i] = round2(parts[i] - toRemove);
-                    absorbedDiff = round2(absorbedDiff + toRemove);
-                }
-                if (Math.abs(absorbedDiff) <= 0.01) break;
-            }
-        }
-    }
-
-    // Final shuffle to randomize which row gets the decimal
-    for (let i = parts.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [parts[i], parts[j]] = [parts[j], parts[i]];
-    }
-
-    return parts;
+    return parts.filter(p => p >= 1);
 }
 
-/**
- * Main generator
- * @param {object} opts
- * @param {string|Date} opts.startMonth  - "MM/YYYY"
- * @param {string|Date} opts.endMonth    - "MM/YYYY"
- * @param {number} opts.openingBalance
- * @param {number} opts.closingBalance
- * @param {number} opts.maxMonthlyDebit  - max total debit per month
- * @param {number} opts.maxMonthlyCredit - max total credit per month
- * @param {number} opts.txnsPerMonth     - target number of transactions per month (default 15)
- * @returns {Array} transactions {date, desc, debit, credit, balance}
- */
 function generateTransactions(opts) {
-    console.log("[Generator] Starting with opts:", JSON.stringify({
-        startMonth: opts.startMonth,
-        endMonth: opts.endMonth,
-        openingBalance: opts.openingBalance,
-        closingBalance: opts.closingBalance,
-        monthlySalary: opts.monthlySalary,
-        monthlySalaries: opts.monthlySalaries
-    }));
     const {
-        startMonth,
-        endMonth,
-        openingBalance,
-        closingBalance,
-        maxMonthlyDebit,
-        maxMonthlyCredit,
-        txnsPerMonth = 15,
+        startMonth, endMonth, openingBalance, closingBalance,
+        maxMonthlyDebit, maxMonthlyCredit,
     } = opts;
 
     const start = parseMonthYear(startMonth);
     const end = parseMonthYear(endMonth);
 
-    // Build list of months
     const months = [];
     let cur = new Date(start.getFullYear(), start.getMonth(), 1);
     while (cur <= end) {
         months.push({ year: cur.getFullYear(), month: cur.getMonth() });
         cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
     }
-
-    if (!months.length) throw new Error("Invalid date range — end must be after start.");
-
     const totalMonths = months.length;
-    let computedTxnsPerMonth = opts.txnsPerMonth || 20;
-    if (opts.targetPages) {
-        // First page holds 10 rows (big header), subsequent pages hold 22 rows each — matches buildSbiHTML.js
-        const targetRows = 10 + (Math.max(0, opts.targetPages - 1) * 22);
-        computedTxnsPerMonth = Math.ceil(targetRows / totalMonths);
-    }
+
+    let totalFractionSum = 0;
+    months.forEach((m, ii) => {
+        const dInM = getDaysInMonth(m.year, m.month);
+        const active = (ii === totalMonths - 1 ? end.getDate() : dInM) - (ii === 0 ? start.getDate() : 1) + 1;
+        totalFractionSum += (active / dInM);
+    });
 
     const isFloatingOpening = (openingBalance === null || openingBalance === undefined || String(openingBalance).trim() === "");
-    let calcOpeningBalance = isFloatingOpening ? closingBalance : Number(openingBalance);
+    let givenOpeningBalance = isFloatingOpening ? null : Number(openingBalance);
 
-    if (isNaN(calcOpeningBalance) && !isFloatingOpening) {
-        // We have to work backwards from closing balance by estimating typical monthly net movement
-        const salary = Number(opts.monthlySalary) || 0;
-        let estimatedTotalNetMovement = 0;
-        for (let i = 0; i < totalMonths; i++) {
-            let crBase = salary > 0 ? (salary + Math.random() * 5000) : (maxMonthlyCredit * (0.6 + Math.random() * 0.4));
-            let drBase = maxMonthlyDebit * (0.6 + Math.random() * 0.4);
-            if (salary > 0) drBase = Math.min(drBase, salary * 0.9); // prevent estimating huge reckless debits if salary is small
-            estimatedTotalNetMovement += (crBase - drBase);
-        }
+    const limitDr = Number(maxMonthlyDebit) || 50000;
+    const limitCr = Number(maxMonthlyCredit) || 150000;
 
-        // opening + movement = closing  ==>  opening = closing - movement
-        calcOpeningBalance = round2(closingBalance - estimatedTotalNetMovement);
+    const maxDrUser = opts.maxTxnDebit ? Number(opts.maxTxnDebit) : 2990;
+    const maxCrUser = opts.maxTxnCredit ? Number(opts.maxTxnCredit) : 2990;
 
-        if (calcOpeningBalance < 0 && closingBalance > 0) {
-            // Unlikely to start negative, scale down the movement
-            calcOpeningBalance = round2(closingBalance * (0.1 + Math.random() * 0.4));
-        }
-    }
+    const maxAllowedTxns = 190; // strict cap under 200
+    const txnsPerMonthLimit = Math.max(5, Math.floor(maxAllowedTxns / totalMonths));
 
-    // ── GUARD: Opening must be less than closing ──────────────────────────────
-    // If the user provided an opening >= closing, check whether the constraints
-    // actually allow us to generate enough extra debits to bridge the gap.
-    // With salary credits dominating, it is often impossible to have closing < opening
-    // while respecting per-transaction limits.  In that case, auto-correct opening
-    // so it sits naturally below closing (account shows healthy growth).
-    if (!isFloatingOpening && calcOpeningBalance >= closingBalance) {
-        // Estimate the maximum possible total debit across all months
-        const maxTxnDr = opts.maxTxnDebit ? Number(opts.maxTxnDebit) : Infinity;
-        const FIXED_DR_ROWS = 17; // matches the generator loop
-        const maxDebitPerMonth = Math.min(
-            Number(maxMonthlyDebit) || Infinity,
-            maxTxnDr !== Infinity ? maxTxnDr * FIXED_DR_ROWS : Infinity
-        );
-
-        // Estimate total salary credits for all months
-        let estimatedTotalSalary = 0;
-        const provSals = opts.monthlySalaries || [];
-        for (let i = 0; i < totalMonths; i++) {
-            const sal = (provSals[i] !== null && provSals[i] !== undefined && Number(provSals[i]) > 0)
-                ? Number(provSals[i])
-                : (Number(opts.monthlySalary) || 0);
-            estimatedTotalSalary += sal;
-        }
-
-        // Maximum net debit we can ever achieve (debits minus all credits)
-        const maxTotalDebit = maxDebitPerMonth !== Infinity
-            ? maxDebitPerMonth * totalMonths
-            : (calcOpeningBalance - closingBalance) * 2; // generous fallback
-        const minPossibleClosing = round2(calcOpeningBalance + estimatedTotalSalary - maxTotalDebit);
-
-        if (minPossibleClosing > closingBalance) {
-            // Impossible to reach this closing balance without breaking limits —
-            // recalculate opening so it is naturally less than closing.
-            // opening = closing - estimated_net_growth
-            const estimatedNetGrowth = round2(estimatedTotalSalary - maxTotalDebit * 0.7);
-            calcOpeningBalance = round2(closingBalance - Math.abs(estimatedNetGrowth));
-            if (calcOpeningBalance < 0) calcOpeningBalance = round2(closingBalance * 0.3);
-            console.log(`[Generator] ⚠ Opening balance adjusted to ${calcOpeningBalance} (was ${Number(openingBalance)}) — salary credits make closing=${closingBalance} unreachable with current limits.`);
-        }
-    }
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const netChange = round2(closingBalance - calcOpeningBalance);  // can be + or -
-
-    // Distribute net change across months
-    // netChange = sum(monthly_credit) - sum(monthly_debit)
-    // We'll spread the "excess credit" or "excess debit" evenly
-    const transactions = [];
-    let running = round2(calcOpeningBalance);
+    let transactions = [];
+    let sumAllDr = 0;
+    let sumAllCr = 0;
 
     for (let mi = 0; mi < totalMonths; mi++) {
         const { year, month } = months[mi];
         const daysInMonth = getDaysInMonth(year, month);
-        const isLastMonth = mi === totalMonths - 1;
+        const isFirst = (mi === 0);
+        const isLast = (mi === totalMonths - 1);
+        const minDate = isFirst ? start.getDate() : 1;
+        const maxDate = isLast ? end.getDate() : daysInMonth;
 
-        // ====================================================================
-        // STEP 1: Determine this month's salary
-        // ====================================================================
+        const activeDays = maxDate - minDate + 1;
+        let fraction = activeDays / daysInMonth;
+
+        // Target large spread between opening and closing if possible, but bound by maxMonthlyCredit/Debit limits
+        // If the user wants lower opening, it means they want more credits over debits
+        let mDrTotal = limitDr * fraction;
+        let mCrTotal = limitCr * fraction;
+        
+        // Boost credits to match the maximum allowed by limitCr to ensure a steep slope
+        mCrTotal = limitCr * fraction;
+
+        if (isLast && totalMonths > 1) {
+            mDrTotal = Math.max(500, Math.min(mDrTotal, limitDr * 0.15));
+            mCrTotal = Math.max(500, Math.min(mCrTotal, limitCr * 0.15));
+        }
+
         const provSals = opts.monthlySalaries || [];
-        const thisMonthSal = provSals[mi];
-        let salary = 0;
-        if (thisMonthSal !== null && thisMonthSal !== undefined && String(thisMonthSal).trim() !== "" && Number(thisMonthSal) > 0) {
-            salary = Number(thisMonthSal);
+        const salary = Number(provSals[mi]) || (mi === 0 || mi === totalMonths - 1 || Math.random() > 0.1 ? (Number(opts.monthlySalary) || 0) : 0);
+
+        let nonSalaryCr = Math.max(0, mCrTotal - salary);
+
+        let minNeededDrParts = Math.ceil(mDrTotal / maxDrUser);
+        let minNeededCrParts = Math.ceil(nonSalaryCr / maxCrUser);
+
+        // Subordinate check to avoid explosion of 200+ txns
+        let drCountLimit = txnsPerMonthLimit;
+        let crCountLimit = txnsPerMonthLimit;
+        if ((minNeededDrParts + minNeededCrParts) > txnsPerMonthLimit) {
+            let scale = txnsPerMonthLimit / (minNeededDrParts + minNeededCrParts);
+            mDrTotal = mDrTotal * scale;
+            nonSalaryCr = nonSalaryCr * scale;
+            mCrTotal = nonSalaryCr + salary;
+            drCountLimit = Math.ceil(minNeededDrParts * scale);
+            crCountLimit = Math.ceil(minNeededCrParts * scale);
         } else {
-            salary = Number(opts.monthlySalary) || 0;
-        }
-        console.log(`--- [Generator Month Loop] mi: ${mi}, year: ${year}, month: ${month}, salary: ${salary} ---`);
-
-        // ====================================================================
-        // STEP 2: Hard-coded transaction counts — this is the ONLY source of truth
-        // ====================================================================
-        const FIXED_DR_ROWS = 17;  // Exactly 17 debit transactions per month
-        const FIXED_CR_ROWS = 7;   // Exactly 7 "other" credit transactions per month (+ salary below)
-
-        const maxTxnDr = opts.maxTxnDebit ? Number(opts.maxTxnDebit) : 2950;
-        const maxTxnCr = opts.maxTxnCredit ? Number(opts.maxTxnCredit) : 2950;
-        const minTxnVal = 100;
-
-        // ====================================================================
-        // STEP 3: Generate exactly FIXED_DR_ROWS debit amounts (random between min and maxTxnDr)
-        // ====================================================================
-        function randomAmount(min, max) {
-            // Returns a realistic-looking random amount
-            const raw = min + Math.random() * (max - min);
-            // 70% chance of a round number, 30% chance of a precise decimal
-            if (Math.random() < 0.7) return Math.round(raw / 50) * 50 || min;
-            return Math.round(raw * 100) / 100;
+            // we have plenty of room, but we should roughly allocate them based on the weights
+            let totalNeeded = minNeededDrParts + minNeededCrParts || 1;
+            drCountLimit = Math.ceil((minNeededDrParts / totalNeeded) * txnsPerMonthLimit);
+            crCountLimit = Math.ceil((minNeededCrParts / totalNeeded) * txnsPerMonthLimit);
         }
 
-        const drAmounts = [];
-        for (let i = 0; i < FIXED_DR_ROWS; i++) {
-            drAmounts.push(randomAmount(minTxnVal, maxTxnDr));
+        const drAmounts = distributeAmount(mDrTotal, 50, maxDrUser, drCountLimit);
+        const otherCrAmounts = distributeAmount(nonSalaryCr, 50, maxCrUser, crCountLimit);
+
+        const mTxns = [];
+        function getSpaced(cnt, minD, maxD) {
+            let p = []; for(let d=minD; d<=maxD; d++) p.push(d);
+            for(let i=p.length-1; i>0; i--){ let j=Math.floor(Math.random()*(i+1)); [p[i],p[j]]=[p[j],p[i]]; }
+            return p.slice(0, cnt).sort((a,b)=>a-b);
         }
 
-        // ====================================================================
-        // STEP 4: Generate exactly FIXED_CR_ROWS "other" credit amounts
-        // ====================================================================
-        const otherCrAmounts = [];
-        for (let i = 0; i < FIXED_CR_ROWS; i++) {
-            otherCrAmounts.push(randomAmount(minTxnVal, maxTxnCr));
-        }
+        const drDays = getSpaced(drAmounts.length, minDate, maxDate);
+        const crDays = getSpaced(otherCrAmounts.length, minDate, maxDate);
 
-        // ====================================================================
-        // STEP 5: Build all credit amounts array (other credits first, salary last)
-        // ====================================================================
-        const crAmounts = [...otherCrAmounts];
-        if (salary > 0) crAmounts.push(salary);
-
-        // Determine days boundaries for this month
-        const isFirstMonth = mi === 0;
-        const minDate = isFirstMonth ? start.getDate() : 1;
-        const maxDate = isLastMonth ? end.getDate() : daysInMonth;
-
-        // Determine days. Spread them uniquely across the month
-        function getUniqueSpreadDates(count, minD, maxD) {
-            const days = [];
-            if (count <= 0) return days;
-            
-            // Create a pool of all available days
-            let pool = [];
-            for (let d = minD; d <= maxD; d++) pool.push(d);
-            
-            // Shuffle the pool (Fisher-Yates)
-            for (let i = pool.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [pool[i], pool[j]] = [pool[j], pool[i]];
-            }
-
-            // Pick from the pool. If count > pool size, we start duplicating but spread them
-            for (let i = 0; i < count; i++) {
-                days.push(pool[i % pool.length]);
-            }
-            return days.sort((a, b) => a - b);
-        }
-
-        const sortedDrDays = getUniqueSpreadDates(drAmounts.length, minDate, maxDate - 1);
-        const sortedCrDays = getUniqueSpreadDates(crAmounts.length - (salary > 0 ? 1 : 0), minDate, maxDate - 1);
-
-        const usedDebitDescs = opts.customDebitDescs?.length > 0 ? opts.customDebitDescs : DEBIT_DESCS;
-        const usedCreditDescs = opts.customCreditDescs?.length > 0 ? opts.customCreditDescs : CREDIT_DESCS;
-
-        // Helper to pick and call a description template
-        function generateDesc(descTemplate) {
-            if (typeof descTemplate === 'function') {
-                return descTemplate();
-            }
-            if (typeof descTemplate === 'string') {
-                // Strip any accidental date prefix from old stored descriptions
-                return descTemplate.replace(/^\s*\d{2}-\d{2}-\d{4}\s*/, '');
-            }
-            return descTemplate;
-        }
-
-        const monthTxns = [];
-        let drDayIdx = 0;
-        for (const amt of drAmounts) {
-            const txDay = sortedDrDays[drDayIdx++] || minDate;
-            const dateStr = formatDate(new Date(year, month, txDay));
-            const desc = generateDesc(randItem(usedDebitDescs));
-            monthTxns.push({ day: txDay, debit: amt, credit: 0, desc, dateStr });
-        }
-
-        let crDayIdx = 0;
-        for (const amt of crAmounts) {
-            const isSal = (amt === salary && salary > 0);
-            const txDay = isSal ? maxDate : (sortedCrDays[crDayIdx++] || minDate);
-            const dateStr = formatDate(new Date(year, month, txDay));
-            
-            let desc;
-            if (isSal) {
-                desc = generateDesc(randItem(SALARY_DESCS));
-            } else {
-                desc = generateDesc(randItem(usedCreditDescs));
-            }
-            
-            monthTxns.push({ day: txDay, debit: 0, credit: amt, desc, dateStr, isSalary: isSal });
-        }
-
-        // Sort by day
-        monthTxns.sort((a, b) => a.day - b.day);
-
-        // Add to transactions with running balance
-        for (const tx of monthTxns) {
-            running = round2(running + tx.credit - tx.debit);
-            transactions.push({
-                date: tx.dateStr,
-                desc: tx.desc,
-                debit: tx.debit,
-                credit: tx.credit,
-                balance: running,
+        drAmounts.forEach((amt, i) => {
+            const d = drDays[i] || minDate;
+            mTxns.push({ 
+                day: d, debit: amt, credit: 0, 
+                desc: randItem(opts.customDebitDescs?.length ? opts.customDebitDescs : DEBIT_DESCS)(), 
+                date: formatDate(new Date(year, month, d)) 
             });
-        }
-    }
-
-    // ---- FINAL TALLY: Set opening balance and ensure closing balance is exact ----
-    if (transactions.length > 0) {
-        if (isFloatingOpening) {
-            // Compute opening balance backward from closingBalance — NO EXTRA ROWS
-            let totalDr = 0, totalCr = 0;
-            for (const tx of transactions) {
-                totalDr += tx.debit || 0;
-                totalCr += tx.credit || 0;
-            }
-            calcOpeningBalance = round2(closingBalance - (totalCr - totalDr));
-        }
-        // Re-run balances
-        let runBal = round2(calcOpeningBalance);
-        for (const tx of transactions) {
-            runBal = round2(runBal + (tx.credit || 0) - (tx.debit || 0));
-            tx.balance = runBal;
-        }
-    }
-
-    // ---- FINAL GLOBAL FIX: Ensure sorting and balance integrity ----
-    if (transactions.length > 0) {
-        // 1. Sort by date definitively (YYYY-MM-DD format for string sort)
-        transactions.sort((a, b) => {
-            const dateA = a.date.split(/[-\/]/).reverse().join('-');
-            const dateB = b.date.split(/[-\/]/).reverse().join('-');
-            const comp = dateA.localeCompare(dateB);
-            if (comp !== 0) return comp;
-            // Realistic flow: Debits before Credits, SALARY last
-            if ((a.desc || "").includes('SALARY')) return 1;
-            if ((b.desc || "").includes('SALARY')) return -1;
-            if (a.credit && !b.credit) return 1;
-            if (!a.credit && b.credit) return -1;
-            return 0;
+            sumAllDr += amt;
         });
 
-        // 2. Re-calculate all balances after sort
-        let finalRunning = round2(calcOpeningBalance);
-        for (const tx of transactions) {
-            finalRunning = round2(finalRunning + (tx.credit || 0) - (tx.debit || 0));
-            tx.balance = finalRunning;
+        otherCrAmounts.forEach((amt, i) => {
+            const d = crDays[i] || minDate;
+            mTxns.push({ 
+                day: d, debit: 0, credit: amt, 
+                desc: randItem(opts.customCreditDescs?.length ? opts.customCreditDescs : CREDIT_DESCS)(), 
+                date: formatDate(new Date(year, month, d)) 
+            });
+            sumAllCr += amt;
+        });
+
+        if (salary > 0) {
+            mTxns.push({ 
+                day: maxDate, debit: 0, credit: salary, isSalary: true,
+                desc: randItem(SALARY_DESCS)(), 
+                date: formatDate(new Date(year, month, maxDate)) 
+            });
+            sumAllCr += salary;
         }
 
-        // 3. Final snap — distribute difference across rows respecting per-txn limits
-        let snapDiff = round2(closingBalance - finalRunning);
-        if (Math.abs(snapDiff) > 0.01) {
-            const maxTxnDr = opts.maxTxnDebit ? Number(opts.maxTxnDebit) : Infinity;
-            const maxTxnCr = opts.maxTxnCredit ? Number(opts.maxTxnCredit) : Infinity;
+        mTxns.sort((a,b) => a.day - b.day);
+        transactions.push(...mTxns);
+    }
 
-            // Identify non-salary rows (can be adjusted)
-            const adjustable = transactions.filter(tx => !(tx.desc || '').toUpperCase().includes('SALARY'));
-
-            if (snapDiff < 0) {
-                // Need more debit — first try spreading extra debit across existing debit rows
-                let remaining = Math.abs(snapDiff);
-                for (const tx of [...adjustable].reverse()) {
-                    if (remaining <= 0.01) break;
-                    if (tx.debit > 0) {
-                        const room = round2(maxTxnDr - tx.debit);
-                        if (room > 0.01) {
-                            const add = Math.min(remaining, room);
-                            tx.debit = round2(tx.debit + add);
-                            remaining = round2(remaining - add);
-                        }
-                    }
-                }
-                // If still remaining, spawn new debit rows — use a DEBIT-typed template row
-                if (remaining > 0.01) {
-                    // Find a row with a debit description to use as template; fall back to any adjustable row
-                    const debitRefTx = adjustable.find(t => t.debit > 0 && /WDL|DR|DIRECT|DEBIT|ACH/i.test(t.desc || ''))
-                        || adjustable.find(t => t.debit > 0)
-                        || adjustable[adjustable.length - 1]
-                        || transactions[transactions.length - 1];
-                    const limit = maxTxnDr !== Infinity ? maxTxnDr : 50000;
-                    // Use the last date that already exists (last non-salary transaction date)
-                    const baseDate = debitRefTx.date;
-                    while (remaining > 0.01) {
-                        const chunk = round2(Math.min(remaining, Math.max(100, limit * (0.5 + Math.random() * 0.4))));
-                        // Always generate a DEBIT description
-                        const desc = DEBIT_DESCS[Math.floor(Math.random() * DEBIT_DESCS.length)]();
-                        transactions.push({ date: baseDate, desc, debit: chunk, credit: 0, balance: 0 });
-                        remaining = round2(remaining - chunk);
-                    }
-                }
-            } else {
-                // Need more credit — first try spreading extra credit across existing credit rows
-                let remaining = snapDiff;
-                for (const tx of [...adjustable].reverse()) {
-                    if (remaining <= 0.01) break;
-                    if (tx.credit > 0 && !(tx.desc || '').toUpperCase().includes('SALARY')) {
-                        const room = round2(maxTxnCr - tx.credit);
-                        if (room > 0.01) {
-                            const add = Math.min(remaining, room);
-                            tx.credit = round2(tx.credit + add);
-                            remaining = round2(remaining - add);
-                        }
-                    }
-                }
-                // If still remaining, spawn new credit rows — use a CREDIT-typed template row
-                if (remaining > 0.01) {
-                    // Find a row with a credit description to use as template; fall back to any adjustable row
-                    const creditRefTx = adjustable.find(t => t.credit > 0 && /DEP|CR|CHQ/i.test(t.desc || ''))
-                        || adjustable.find(t => t.credit > 0)
-                        || adjustable[adjustable.length - 1]
-                        || transactions[transactions.length - 1];
-                    const limit = maxTxnCr !== Infinity ? maxTxnCr : 50000;
-                    const baseDate = creditRefTx.date;
-                    while (remaining > 0.01) {
-                        const chunk = round2(Math.min(remaining, Math.max(100, limit * (0.5 + Math.random() * 0.4))));
-                        // Always generate a CREDIT description
-                        const desc = CREDIT_DESCS[Math.floor(Math.random() * CREDIT_DESCS.length)]();
-                        transactions.push({ date: baseDate, desc, credit: chunk, debit: 0, balance: 0 });
-                        remaining = round2(remaining - chunk);
-                    }
-                }
-            }
-
-            // Re-sort after any added rows
-            transactions.sort((a, b) => {
-                const dateA = a.date.split(/[-\/]/).reverse().join('-');
-                const dateB = b.date.split(/[-\/]/).reverse().join('-');
-                const comp = dateA.localeCompare(dateB);
-                if (comp !== 0) return comp;
-                if ((a.desc || '').includes('SALARY')) return 1;
-                if ((b.desc || '').includes('SALARY')) return -1;
-                if (a.credit && !b.credit) return 1;
-                if (!a.credit && b.credit) return -1;
-                return 0;
-            });
-
-            // Final balance recomputation
-            let lastRunning = round2(calcOpeningBalance);
-            for (const tx of transactions) {
-                lastRunning = round2(lastRunning + (tx.credit || 0) - (tx.debit || 0));
-                tx.balance = lastRunning;
-            }
-
-            // Absorb any residual floating-point dust into the last adjustable debit/credit
-            const dust = round2(closingBalance - lastRunning);
-            if (Math.abs(dust) > 0.001) {
-                for (let i = transactions.length - 1; i >= 0; i--) {
-                    if (!(transactions[i].desc || '').toUpperCase().includes('SALARY')) {
-                        if (dust > 0) transactions[i].credit = round2((transactions[i].credit || 0) + dust);
-                        else transactions[i].debit = round2((transactions[i].debit || 0) + Math.abs(dust));
-                        // Recompute one last time
-                        let dustBal = round2(calcOpeningBalance);
-                        for (const tx of transactions) {
-                            dustBal = round2(dustBal + (tx.credit || 0) - (tx.debit || 0));
-                            tx.balance = dustBal;
-                        }
-                        break;
-                    }
-                }
-            }
+    // Force sumAllCr > sumAllDr so opening balance is strictly less than closing.
+    // We already accounted for salary, but if somehow sumCr <= sumDr
+    if (sumAllCr <= sumAllDr) {
+        let diff = sumAllDr - sumAllCr + 5000;
+        let eligible = transactions.filter(t => t.credit > 0 && !t.isSalary && t.credit + diff <= maxCrUser);
+        if (eligible.length > 0) {
+            eligible[0].credit += diff;
+            sumAllCr += diff;
+        } else {
+            // Find any credit row, even if we slightly exceed, or add a new one
+            let newTx = {
+                day: start.getDate(), debit: 0, credit: Math.min(diff, maxCrUser),
+                desc: randItem(CREDIT_DESCS)(),
+                date: formatDate(new Date(start.getFullYear(), start.getMonth(), start.getDate()))
+            };
+            transactions.unshift(newTx);
+            sumAllCr += newTx.credit;
         }
     }
 
-    return { transactions, openingBalance: calcOpeningBalance };
+    // Check if the exact opening is too close to closing balance. (e.g. less than 50% gap from expected growth or literally very close)
+    let exactOpening = round2(closingBalance - sumAllCr + sumAllDr);
+    
+    // If the opening balance is still > 60% of closing balance (and closing is positive),
+    if (exactOpening > closingBalance * 0.6 && closingBalance > 0 && givenOpeningBalance === null) {
+        let desiredExtraCredit = round2(exactOpening - (closingBalance * 0.5)); // try to push down to 50% (9 Lakhs for 18 Lakh closing)
+        
+        // Spread across non-salary credits first
+        let spreadableCreditTxns = transactions.filter(t => t.credit > 0 && !t.isSalary);
+        for (let tx of spreadableCreditTxns) {
+            if (desiredExtraCredit <= 0) break;
+            
+            let room = Math.max(0, maxCrUser - tx.credit);
+            if (room > 0) {
+                let add = Math.min(room, desiredExtraCredit);
+                tx.credit += add;
+                sumAllCr += add;
+                desiredExtraCredit -= add;
+            }
+        }
+        exactOpening = round2(closingBalance - sumAllCr + sumAllDr);
+    }
+
+    // Still too high? Add literal new credit transactions at random dates
+    if (exactOpening > closingBalance * 0.6 && closingBalance > 0 && givenOpeningBalance === null && maxCrUser > 0) {
+         let deficit = exactOpening - (closingBalance * 0.5); // push it all the way down to 50%
+         
+         const txSpaceAvailable = Math.max(0, 195 - transactions.length);
+         let numBolster = Math.ceil(deficit / maxCrUser);
+         if (numBolster > txSpaceAvailable) {
+             numBolster = txSpaceAvailable; // Hard cap on total transactions
+         }
+         
+         // In this scenario, we might have to break `maxCrUser` softly to meet the exact chunk size without blowing up the limit.
+         // Let's divide deficit equally among the limited number of rows
+         const amtPerBolst = numBolster > 0 ? (deficit / numBolster) : 0;
+         
+         for(let i=0; i<numBolster; i++){
+             let add = round2(amtPerBolst);
+             if (add <= 0) break;
+             let newTx = {
+                 day: start.getDate(), debit: 0, credit: add,
+                 desc: randItem(CREDIT_DESCS)(),
+                 date: formatDate(new Date(start.getFullYear(), start.getMonth(), start.getDate()))
+             };
+             // Distribute them evenly
+             let injectIdx = Math.floor(Math.random() * transactions.length);
+             const injectTx = transactions[injectIdx];
+             newTx.date = injectTx.date;
+             newTx.day = injectTx.day;
+             
+             transactions.splice(injectIdx, 0, newTx);
+             sumAllCr += add;
+         }
+         exactOpening = round2(closingBalance - sumAllCr + sumAllDr);
+    }
+    
+    // Safety fallback: if user forced an exact opening balance, we use it, but there WILL be a mismatch at the end
+    let startingBal = (givenOpeningBalance !== null) ? givenOpeningBalance : exactOpening;
+    let running = startingBal;
+
+    transactions.forEach(tx => {
+        running = round2(running + tx.credit - tx.debit);
+        tx.balance = running;
+    });
+
+    // We do NOT add a snapDiff! Because:
+    // 1) if floating opening balance, math matches perfectly: startingBal === exactOpening.
+    // 2) The user literally asked for calculating FROM closing balance backwards.
+    // The closing balance at the end of properties will exactly equal closingBalance natively!
+
+    return { transactions, openingBalance: startingBal };
 }
 
 function generateAmountsForExistingRows(transactions, opts) {

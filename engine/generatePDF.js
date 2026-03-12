@@ -61,7 +61,8 @@ async function generatePDF(data) {
   const page = await browser.newPage();
 
   await page.setContent(html, {
-    waitUntil: "networkidle0"
+    waitUntil: "domcontentloaded",
+    timeout: 90000,
   });
 
   const outputPath = data.output || "output/demo_statement.pdf";

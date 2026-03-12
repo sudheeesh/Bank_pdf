@@ -94,47 +94,44 @@ function groupIntoRows(texts, yTolerance = 1) {
 function detectColumns(rows) {
     // Keywords for each column type (ORDER MATTERS — more specific first)
     const patterns = {
-        date: /\b(txn[\s-]*date|value[\s-]*date|tran[\s-]*date|date)\b/i,
-        desc: /\b(description|narration|particulars|remarks|details)\b/i,
-        debit: /\b(debit|dr\.?|withdrawal|dr[\s-]*amt|amount[\s-]*dr)\b/i,
-        credit: /\b(credit|cr\.?|deposit|cr[\s-]*amt|amount[\s-]*cr)\b/i,
-        balance: /\b(balance|bal\.?|running[\s-]*bal|closing[\s-]*bal)\b/i,
-        chq: /\b(chq|cheque|ref\.?|ref[\s-]*no|transaction[\s-]*id)\b/i,
+        date: /\b(txn[\s-]*date|value[\s-]*date|tran[\s-]*date|date|date\s+of\s+statement)\b/i,
+        desc: /\b(description|narration|particulars|remarks|details|narrative)\b/i,
+        debit: /\b(debit|dr\.?|withdrawals?|dr[\s-]*amt|amount[\s-]*dr|withdrawal\s*\(dr\))\b/i,
+        credit: /\b(credit|cr\.?|deposits?|cr[\s-]*amt|amount[\s-]*cr|deposit\s*\(cr\))\b/i,
+        balance: /\b(balance|bal\.?|running[\s-]*bal|closing[\s-]*bal|balance\s*\(inr\))\b/i,
+        chq: /\b(chq|cheque|ref\.?|ref[\s-]*no|transaction[\s-]*id|tran[\s-]*id|cheque\s*details)\b/i,
     };
 
     let columns = { date: null, description: null, debit: null, credit: null, balance: null };
     let headerRow = null;
 
-    // ---- Pass 1: look for a single row containing debit + balance ----
-    // (credit might be absent as a header if the PDF uses Dr/Cr suffix instead)
+    // ---- Pass 1: look for a single row or two adjacent rows containing debit + balance ----
     for (const row of rows) {
         const cellTexts = row.cells.map(c => c.text.toLowerCase());
         const hasDebit = cellTexts.some(t => patterns.debit.test(t));
         const hasBalance = cellTexts.some(t => patterns.balance.test(t));
+        const hasParticulars = cellTexts.some(t => patterns.desc.test(t));
 
-        if (hasDebit && hasBalance) {
-            headerRow = row;
-            row.cells.forEach(cell => {
-                const txt = cell.text;
-                if (!columns.date && patterns.date.test(txt)) columns.date = { x: cell.rawX, label: txt };
-                if (!columns.desc && patterns.desc.test(txt)) columns.description = { x: cell.rawX, label: txt };
-                if (!columns.debit && patterns.debit.test(txt)) columns.debit = { x: cell.rawX, label: txt };
-                if (!columns.credit && patterns.credit.test(txt)) columns.credit = { x: cell.rawX, label: txt };
-                if (!columns.balance && patterns.balance.test(txt)) columns.balance = { x: cell.rawX, label: txt };
-            });
+        if (hasDebit || hasBalance || hasParticulars) {
+            // Find nearby cells in potentially multi-line header
+            const nearbyRows = rows.filter(r => Math.abs(r.y - row.y) <= 3);
+            const allHeaderCells = [].concat(...nearbyRows.map(r => r.cells));
+            
+            const hasEnough = allHeaderCells.some(c => patterns.debit.test(c.text)) && 
+                              allHeaderCells.some(c => patterns.balance.test(c.text));
 
-            // If credit header not in same row, scan nearby rows (within 2 units Y)
-            if (!columns.credit) {
-                for (const r2 of rows) {
-                    if (Math.abs(r2.y - row.y) > 2) continue;
-                    r2.cells.forEach(cell => {
-                        if (!columns.credit && patterns.credit.test(cell.text)) {
-                            columns.credit = { x: cell.rawX, label: cell.text };
-                        }
-                    });
-                }
+            if (hasEnough) {
+                headerRow = row;
+                allHeaderCells.forEach(cell => {
+                    const txt = cell.text;
+                    if (!columns.date && patterns.date.test(txt)) columns.date = { x: cell.rawX, label: txt };
+                    if (!columns.desc && patterns.desc.test(txt)) columns.description = { x: cell.rawX, label: txt };
+                    if (!columns.debit && patterns.debit.test(txt)) columns.debit = { x: cell.rawX, label: txt };
+                    if (!columns.credit && patterns.credit.test(txt)) columns.credit = { x: cell.rawX, label: txt };
+                    if (!columns.balance && patterns.balance.test(txt)) columns.balance = { x: cell.rawX, label: txt };
+                });
+                if (columns.debit && columns.balance) break;
             }
-            break;
         }
     }
 
@@ -188,8 +185,8 @@ function parseTransactions(rows, columns, pageIndex) {
     const xTol = 5;          // wider tolerance for misaligned PDFs
     const transactions = [];
 
-    const datePattern = /^(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{1,2}\s+[A-Za-z]{3}\s+\d{2,4}|[A-Za-z]{3}\s*\d{1,2},?\s*\d{4})$/;
-    const drCrPattern = /^(Dr|Cr|DR|CR)$/;
+    const datePattern = /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{1,2}[\/\-\s]+[A-Za-z]{3}[\/\-\s]+\d{2,4}|[A-Za-z]{3}[\/\-\s]*\d{1,2},?[\/\-\s]*\d{4})/;
+    const drCrPattern = /\b(Dr|Cr|DR|CR)\b/;
 
     for (const row of rows) {
         const cells = row.cells;
@@ -246,16 +243,24 @@ function parseTransactions(rows, columns, pageIndex) {
         let debitVal = 0;
         let creditVal = 0;
 
-        if (drCrCell && isCrRow) {
-            // Amount is in the creditCell position determined above
-            creditVal = creditCell ? parseAmount(creditCell.text) : 0;
-            debitVal = 0;
-        } else if (drCrCell && isDrRow) {
+        // If the table explicitly has BOTH a debit column and a credit column,
+        // we can trust the cell positions directly. The Dr/Cr cell (if present)
+        // is likely just denoting whether the Balance is Dr or Cr.
+        if (columns.debit && columns.credit) {
             debitVal = debitCell ? parseAmount(debitCell.text) : 0;
-            creditVal = 0;
+            creditVal = creditCell ? parseAmount(creditCell.text) : 0;
         } else {
-            debitVal = debitCell ? parseAmount(debitCell.text) : 0;
-            creditVal = creditCell ? parseAmount(creditCell.text) : 0;
+            // Only fall back to Dr/Cr logic if it's a single amount column
+            if (drCrCell && isCrRow) {
+                creditVal = creditCell ? parseAmount(creditCell.text) : 0;
+                debitVal = 0;
+            } else if (drCrCell && isDrRow) {
+                debitVal = debitCell ? parseAmount(debitCell.text) : 0;
+                creditVal = 0;
+            } else {
+                debitVal = debitCell ? parseAmount(debitCell.text) : 0;
+                creditVal = creditCell ? parseAmount(creditCell.text) : 0;
+            }
         }
 
         const tx = {

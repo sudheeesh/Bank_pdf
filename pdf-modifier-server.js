@@ -9,6 +9,7 @@ const { recalculate, buildDrawOps } = require("./engine/smartRecalculate");
 const { generateCondensedPDF } = require("./engine/generateCondensedPDF");
 const { compressPages } = require("./engine/compressPages");
 const { generateTransactions, generateAmountsForExistingRows } = require("./engine/generateTransactions");
+const { detectBank } = require("./engine/detectBank");
 
 
 const router = express.Router();
@@ -71,8 +72,13 @@ function extractAccountInfo(rawText) {
 
     const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
 
-    // 1. Bank Name
-    if (text.includes("STATE BANK OF INDIA")) info.bankName = "STATE BANK OF INDIA";
+    // 1. Bank Name — detect all supported banks
+    if (/STATE\s+BANK\s+OF\s+INDIA/i.test(text))           info.bankName = "STATE BANK OF INDIA";
+    else if (/FEDERAL\s+BANK|federalbank\.co\.in/i.test(text)) info.bankName = "Federal Bank";
+    else if (/HDFC\s+BANK|hdfcbank\.com/i.test(text))      info.bankName = "HDFC Bank";
+    else if (/ICICI\s+BANK|icicibank\.com/i.test(text))    info.bankName = "ICICI Bank";
+    else if (/AXIS\s+BANK|axisbank\.com/i.test(text))      info.bankName = "Axis Bank";
+    else if (/KOTAK\s+(MAHINDRA\s+)?BANK|kotak\.com/i.test(text)) info.bankName = "Kotak Bank";
     else info.bankName = lines[0] || "";
 
     // 2. Specialized Key-Value Extraction for SBI
@@ -118,10 +124,10 @@ function extractAccountInfo(rawText) {
         }
     });
 
-    // Special case for IFSC (SBIN format)
+    // Special case for IFSC — match any known bank IFSC prefix
     if (!info.ifsc) {
-        const sbinMatch = text.match(/\b(SBIN\d{7})\b/i);
-        if (sbinMatch) info.ifsc = sbinMatch[1].toUpperCase();
+        const ifscMatch = text.match(/\b((?:SBIN|FDRL|HDFC|ICIC|UTIB|KKBK|PUNB|BARB|CNRB|UBIN|MAHB)\d{7})\b/i);
+        if (ifscMatch) info.ifsc = ifscMatch[1].toUpperCase();
     }
 
     // Special case for Email (ensure we don't grab branch email for customer if both exist)
@@ -192,6 +198,113 @@ function extractAccountInfo(rawText) {
         }
     }
 
+    // 5. Federal Bank Specialized Extraction
+    if (info.bankName === "Federal Bank") {
+        const federalLabels = [
+            "Branch Name", "Branch sol ID", "Account Number", "Customer ID", 
+            "Account Open Date", "Account Status", "Mode of Operation", 
+            "Joint Holders", "Nomination", "Currency", "Date of Issue",
+            "Communication Address", "Address Last Updated On", "Regd. Mobile Number",
+            "Email ID", "Type of Account", "Scheme", "IFSC", "MICR Code",
+            "SWIFT Code", "Effective Available Balance", "Branch"
+        ];
+        
+        const cleanupValue = (val) => {
+            if (!val) return "";
+            let cleaned = val.split("\n")[0].trim();
+            // Greedy strip: find if any label exists in the value and cut it
+            for (const label of federalLabels) {
+                // Case-insensitive check and handle squeezed text (no space)
+                const regex = new RegExp(label.replace(/\s+/g, "\\s*"), "i");
+                const match = cleaned.match(regex);
+                if (match && match.index > 0) {
+                    cleaned = cleaned.substring(0, match.index).trim();
+                }
+            }
+            return cleaned.replace(/^[:\-]\s*/, "").replace(/[:\-]$/, "").trim();
+        };
+
+        for (let i = 0; i < Math.min(lines.length, 35); i++) {
+            const line = lines[i];
+            
+            // Extraction using specific Label: anchors to prevent multi-column bleed
+            if (line.includes("Name") && line.includes(":")) {
+                // Ensure we don't match 'Branch Name' when looking for 'Name'
+                const match = line.match(/(?:^|\s)Name\s*:\s*(.*)/i);
+                if (match && match[1]) {
+                    const val = cleanupValue(match[1]);
+                    // Only set accountName if it's the primary "Name" field, not "Branch Name"
+                    if (!line.includes("Branch Name") || line.indexOf("Name") < line.indexOf("Branch Name")) {
+                        if (val && val.length > 2) info.accountName = val;
+                    }
+                }
+            }
+            if (line.includes("Account Number") && line.includes(":")) {
+                const parts = line.split(/Account Number\s*:/i);
+                if (parts[1]) info.accountNumber = cleanupValue(parts[1]);
+            }
+            if (line.includes("Branch Name") && line.includes(":")) {
+                const parts = line.split(/Branch Name\s*:/i);
+                if (parts[1]) info.branch = cleanupValue(parts[1]);
+            }
+            if (line.includes("Branch sol ID") && line.includes(":")) {
+                const parts = line.split(/Branch sol ID\s*:/i);
+                if (parts[1]) info.branchCode = cleanupValue(parts[1]);
+            }
+            if (line.includes("IFSC") && line.includes(":")) {
+                const parts = line.split(/IFSC\s*:/i);
+                if (parts[1]) info.ifsc = cleanupValue(parts[1]);
+            }
+            if (line.includes("MICR Code") && line.includes(":")) {
+                const parts = line.split(/MICR Code\s*:/i);
+                if (parts[1]) info.micr = cleanupValue(parts[1]);
+            }
+            if (line.includes("Email ID") && line.includes(":")) {
+                const parts = line.split(/Email ID\s*:/i);
+                if (parts[1]) info.email = cleanupValue(parts[1]);
+            }
+            if (line.includes("Customer ID") && line.includes(":")) {
+                const parts = line.split(/Customer ID\s*:/i);
+                if (parts[1]) info.cif = cleanupValue(parts[1]);
+            }
+            
+            // Period extraction for Federal
+            if (line.includes("Statement of Account for the period")) {
+                const parts = line.split("period");
+                if (parts[1]) info.period = parts[1].trim();
+            }
+        }
+
+        // Branch Address (under Branch Name)
+        const brIdx = lines.findIndex(l => l.includes("Branch Name"));
+        if (brIdx !== -1) {
+            const brLines = [];
+            for (let j = brIdx + 1; j < brIdx + 4; j++) {
+                const ln = lines[j];
+                if (!ln || federalLabels.some(l => ln.includes(l)) || ln.includes(":")) break;
+                brLines.push(ln.trim());
+            }
+            if (brLines.length > 0) info.branchAddress = brLines.join("\\n");
+        }
+
+        // Customer Address special handling for Federal
+        const addrIdx = lines.findIndex(l => l.includes("Communication Address"));
+        if (addrIdx !== -1) {
+            // Fallback: look at the rest of the line
+            const match = lines[addrIdx].match(/Communication Address\s*:\s*(.*)/i);
+            let addrLine = cleanupValue(match ? match[1] : "");
+            
+            const addrLines = addrLine ? [addrLine] : [];
+            // Grab next few lines if they don't look like labels
+            for (let j = addrIdx + 1; j < addrIdx + 6; j++) {
+                const nextL = lines[j];
+                if (!nextL || federalLabels.some(l => nextL.includes(l)) || nextL.includes(":")) break;
+                addrLines.push(nextL.trim());
+            }
+            info.address = addrLines.join("\\n");
+        }
+    }
+
     return info;
 }
 /* ====================================================
@@ -212,24 +325,49 @@ router.post("/api/upload", upload.single("pdf"), async (req, res) => {
             // Priority 1: Coordinate-aware extraction (most reliable for interleaved SBI layout)
             const smartParsed = await smartParse(filePath);
             accountInfo = extractAccountInfoFromParsed(smartParsed);
-            textPreview = smartParsed.pages[0].texts.map(t => t.text).join(" ").substring(0, 4000);
 
-            // Merge with Text-based fallback to ensure maximum field coverage
+            // Always also run pdfParse for full raw text — needed for bank detection
+            // (coordinate text from first page only may miss bank name in header)
             const parsed = await pdfParse(pdfBytes);
-            const fbInfo = extractAccountInfo(parsed.text);
+            const fullRawText = parsed.text || '';
+            textPreview = fullRawText.substring(0, 8000);  // Give detectBank plenty of context
+
+            // Merge with text-based fallback to ensure maximum field coverage
+            const fbInfo = extractAccountInfo(fullRawText);
+            const isFederal = /federal\s*bank/i.test(fullRawText);
+            
             Object.keys(fbInfo).forEach(k => {
-                if (!accountInfo[k] && fbInfo[k]) accountInfo[k] = fbInfo[k];
+                // If it's Federal, prioritize the text-based clean values for key fields
+                if (isFederal && fbInfo[k]) {
+                    accountInfo[k] = fbInfo[k];
+                } else if (!accountInfo[k] && fbInfo[k]) {
+                    accountInfo[k] = fbInfo[k];
+                }
             });
         } catch (e) {
             console.warn("[upload] Spatial parse failed, falling back to basic:", e.message);
             try {
                 const parsed = await pdfParse(pdfBytes);
-                textPreview = parsed.text.substring(0, 4000);
+                textPreview = parsed.text.substring(0, 8000);
                 accountInfo = extractAccountInfo(parsed.text);
             } catch (innerE) { }
         }
 
-        res.json({ success: true, fileId: req.file.filename, originalName: req.file.originalname, size: req.file.size, pages: pagesDimensions.length, pagesDimensions, textPreview, accountInfo: { ...accountInfo, customerPinCode: accountInfo.customerPinCode || "" } });
+        // Detect which bank this PDF belongs to
+        const detectedBank = detectBank(textPreview, accountInfo);
+        console.log(`[upload] Detected bank: ${detectedBank.displayName} (${detectedBank.key})`);
+
+        res.json({
+            success: true,
+            fileId: req.file.filename,
+            originalName: req.file.originalname,
+            size: req.file.size,
+            pages: pagesDimensions.length,
+            pagesDimensions,
+            textPreview,
+            accountInfo: { ...accountInfo, customerPinCode: accountInfo.customerPinCode || "" },
+            detectedBank,  // { key: 'sbi'|'federal'|..., displayName: '...' }
+        });
     } catch (err) {
         console.error("[upload]", err);
         res.status(500).json({ error: err.message });
