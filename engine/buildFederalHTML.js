@@ -133,7 +133,7 @@ function buildFederalHTML(opts) {
         const isFirst = pi === 0;
         const isLast = pi === pageCount - 1;
         const pageNum = pi + 1;
-        
+
         let html = `<div class="page ${!isFirst ? 'not-first-page' : ''}">`;
 
         // ── DARK BLUE HEADER BAR (First page only) ───────────────────────────
@@ -215,7 +215,7 @@ function buildFederalHTML(opts) {
                 <col class="th-bal">
                 <col class="th-drcr">
             </colgroup>`;
-            
+
         if (isFirst) {
             html += `
             <thead>
@@ -347,7 +347,7 @@ function buildFederalHTML(opts) {
 
         finalPagesHtml += html;
     } // End of loop
-    
+
 
     // ── CSS ──────────────────────────────────────────────────────────────────
     return `<!DOCTYPE html>
@@ -386,6 +386,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
     color: #fff;
     font-size: 7pt;
     line-height: 1.25;
+}
 .fed-website { font-size: 8pt; margin-bottom: 3px; font-weight: 300; }
 .fed-phone-section { display: flex; align-items: center; margin-bottom: 2px; margin-top: 2px; }
 .fed-phone-box {
@@ -412,17 +413,18 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
 .fed-header-right-logo {
     position: absolute;
     right: -15px; 
-    top: -50px; /* Adjusted to align the logo's tagline with the email line */
+    top: -45px; /* Balanced for 220px height */
     display: flex;
     align-items: center;
     z-index: 10;
-    margin-bottom: 35px; /* Increased gap to ensure no contact with info box */
 }
 .fed-logo-img {
     height: 220px; /* Increased to 220px as requested */
     width: auto;
     object-fit: contain;
     display: block;
+    margin-bottom: 4px
+     /* Increased gap to ensure no contact with info box */
 }
 /* ── GOLD BAR ── */
 .fed-gold-bar {
