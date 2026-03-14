@@ -11,13 +11,15 @@
 const puppeteer = require("puppeteer");
 const https = require("https");
 const http = require("http");
+const fs = require("fs");
+const path = require("path");
 const { buildSbiHTML } = require("./buildSbiHTML");
 const { buildFederalHTML } = require("./buildFederalHTML");
 const { detectBank } = require("./detectBank");
 
 const LOGO_URLS = {
   sbi:     "https://res.cloudinary.com/dpu9ikeqe/image/upload/v1772833867/sbi_logo_no_bg_r3oysu.png",
-  federal: "https://upload.wikimedia.org/wikipedia/en/thumb/0/09/Federal_Bank_Logo.svg/320px-Federal_Bank_Logo.svg.png",
+  federal: "https://res.cloudinary.com/dpu9ikeqe/image/upload/v1773427506/ChatGPT_Image_Mar_14_2026_12_12_41_AM_eryv8v.png",
 };
 
 // Keep backward compat
@@ -431,15 +433,32 @@ async function generateCondensedPDF(opts) {
   // ── Fetch the correct logo ────────────────────────────────────────────────
   const logoUrl = LOGO_URLS[bankKey] || LOGO_URLS.sbi;
   let logoSrc = '';
+
+  // 1. Try local offline assets first
   try {
-    console.log('[logo] Fetching logo for', bankInfo.displayName, '…');
-    logoSrc = await Promise.race([
-      fetchAsBase64(logoUrl),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('logo fetch timed out after 30s')), 30000))
-    ]);
-    console.log('[logo] Fetched OK (' + Math.round(logoSrc.length / 1024) + ' KB base64)');
-  } catch (e) {
-    console.warn('[logo] Could not fetch logo, PDF will render without it:', e.message);
+    const filenames = { sbi: 'sbi_logo.png', federal: 'federal_logo.png' };
+    const localPath = path.join(__dirname, '..', 'assets', 'logos', filenames[bankKey] || filenames.sbi);
+    if (fs.existsSync(localPath)) {
+      console.log('[logo] Loading local logo:', localPath);
+      const buffer = fs.readFileSync(localPath);
+      logoSrc = "data:image/png;base64," + buffer.toString("base64");
+    }
+  } catch (err) {
+    console.warn('[logo] Local logo read failed:', err.message);
+  }
+
+  // 2. Fallback to online fetch if local missing
+  if (!logoSrc) {
+    try {
+      console.log('[logo] Fetching logo from online for', bankInfo.displayName, '…');
+      logoSrc = await Promise.race([
+        fetchAsBase64(logoUrl),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('logo fetch timed out after 30s')), 30000))
+      ]);
+      console.log('[logo] Online fetch OK (' + Math.round(logoSrc.length / 1024) + ' KB base64)');
+    } catch (e) {
+      console.warn('[logo] Could not fetch online logo, PDF will render without it:', e.message);
+    }
   }
 
   // ── Build HTML using the correct template ─────────────────────────────────

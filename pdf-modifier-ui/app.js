@@ -97,7 +97,8 @@ function inr(n) {
 }
 
 function parseNum(s) {
-  return parseFloat(String(s || '').replace(/,/g, '').trim()) || 0;
+  const v = parseFloat(String(s || '').replace(/,/g, '').trim());
+  return isNaN(v) ? null : v;
 }
 
 function triggerDownload(blob, name) {
@@ -241,6 +242,7 @@ function autoFillAccountInfo(info) {
     'b-nominee': info.nominee || '',
     'b-ckyc': info.ckyc || '',
     'b-email': info.email || '',
+    'b-mobile': info.mobileNumber || '',
     'b-address': info.address || '',
     'b-pin-code': info.customerPinCode || '',
     'b-branch-code': info.branchCode || '',
@@ -330,8 +332,38 @@ function escHtml(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function addRows(n = 1) {
-  for (let i = 0; i < n; i++) txBody.appendChild(createRow());
+function getNextDateFromLastRow() {
+  const rows = txBody.querySelectorAll('tr');
+  if (!rows.length) return '';
+  // Walk backward to find a row with a valid date
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const dateVal = rows[i].querySelector('.td-date')?.value?.trim();
+    if (!dateVal) continue;
+    // Support DD-MM-YYYY and DD/MM/YYYY
+    const m = dateVal.match(/^(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})$/);
+    if (!m) continue;
+    const [, dd, mm, yyyy] = m;
+    const d = new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd));
+    if (isNaN(d.getTime())) continue;
+    return d; // return Date object so caller can increment
+  }
+  return null;
+}
+
+function addRows(n = 1, smartDate = false) {
+  let baseDate = smartDate ? getNextDateFromLastRow() : null;
+  for (let i = 0; i < n; i++) {
+    let nextDateStr = '';
+    if (baseDate) {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() + i + 1); // +1 so first added row is the day after last
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      nextDateStr = `${dd}-${mm}-${yyyy}`;
+    }
+    txBody.appendChild(createRow(nextDateStr ? { date: nextDateStr } : {}));
+  }
   rebuildBalances();
   updateTxCountBadge();
 }
@@ -1018,6 +1050,7 @@ async function buildDownload() {
     accountOpenDate: document.getElementById('b-acc-open-date')?.value || '',
     branchPinCode: document.getElementById('b-branch-pin')?.value || '',
     branchAddress: document.getElementById('b-branch-address')?.value || '',
+    mobileNumber: document.getElementById('b-mobile')?.value || '',
   };
 
   showLoading(`Generating clean PDF (${maxPages} pages max)… ~10s`);

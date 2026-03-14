@@ -39,7 +39,7 @@ function buildSbiHTML(opts) {
   // Each SBI page holds ~22 rows from page 2 onwards — matches original statement exactly
   // Page 1 has a big header so only 10 rows fit
   const rowsPerPageMain = 22;
-  const rowsPerPageFirst = 10;
+  const rowsPerPageFirst = 15; // Set to 15 as requested by user
 
   const pages = [];
   let currentTx = 0;

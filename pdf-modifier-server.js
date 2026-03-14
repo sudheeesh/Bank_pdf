@@ -263,6 +263,10 @@ function extractAccountInfo(rawText) {
                 const parts = line.split(/Email ID\s*:/i);
                 if (parts[1]) info.email = cleanupValue(parts[1]);
             }
+            if (line.includes("Regd. Mobile Number") && line.includes(":")) {
+                const parts = line.split(/Regd. Mobile Number\s*:/i);
+                if (parts[1]) info.mobileNumber = cleanupValue(parts[1]);
+            }
             if (line.includes("Customer ID") && line.includes(":")) {
                 const parts = line.split(/Customer ID\s*:/i);
                 if (parts[1]) info.cif = cleanupValue(parts[1]);
@@ -508,7 +512,7 @@ router.post("/api/generate-transactions", (req, res) => {
         const generated = generateTransactions({
             startMonth,
             endMonth,
-            openingBalance: openingBalance !== "" && openingBalance !== undefined ? Number(openingBalance) : NaN,
+            openingBalance: openingBalance !== "" && openingBalance !== undefined ? Number(openingBalance) : null,
             closingBalance: Number(closingBalance),
             maxMonthlyDebit: Number(maxMonthlyDebit) || 50000,
             maxMonthlyCredit: Number(maxMonthlyCredit) || 200000,
