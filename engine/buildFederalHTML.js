@@ -59,6 +59,9 @@ function buildFederalHTML(opts) {
         effectiveBalance, dateOfIssue, branchSolId,
     } = opts;
 
+    const totalWithdrawals = transactions.reduce((sum, tx) => sum + (tx.newDebit !== undefined ? tx.newDebit : (tx.debit || 0)), 0);
+    const totalDeposits = transactions.reduce((sum, tx) => sum + (tx.newCredit !== undefined ? tx.newCredit : (tx.credit || 0)), 0);
+
     // Federal: page 1 has room for fewer rows (big header + info box)
     // Subsequent pages: more rows
     const ROW_FIRST = 15; // Set to 15 as requested by user
@@ -333,13 +336,52 @@ function buildFederalHTML(opts) {
             </tr>`;
         });
 
+        // Last Page extra rows & sections
+        if (isLast) {
+            html += `
+            <tr class="grand-total-row">
+                <td></td><td></td>
+                <td class="td-center" style="text-align:right;">GRAND TOTAL</td>
+                <td></td><td></td><td></td>
+                <td class="td-wd">${inr(totalWithdrawals)}</td>
+                <td class="td-dep">${inr(totalDeposits)}</td>
+                <td></td><td></td>
+            </tr>`;
+        }
+
         html += `</tbody></table>`;
+
+        if (isLast) {
+            html += `
+            <div class="fed-last-page-extras">
+                <div class="fed-abbr-section">
+                    <div class="abbr-title">Abbreviations Used:</div>
+                    <div class="abbr-grid">
+                        <div class="abbr-item"><span class="abbr-key">CASH</span><span class="abbr-sep">:</span><span class="abbr-val">Cash Transaction</span></div>
+                        <div class="abbr-item"><span class="abbr-key">TFR</span><span class="abbr-sep">:</span><span class="abbr-val">Transfer Transaction</span></div>
+                        <div class="abbr-item"><span class="abbr-key">FT</span><span class="abbr-sep">:</span><span class="abbr-val">Fund Transfer</span></div>
+                        <div class="abbr-item"><span class="abbr-key">CLG</span><span class="abbr-sep">:</span><span class="abbr-val">Clearing Transaction</span></div>
+                        <div class="abbr-item"><span class="abbr-key">SBINT</span><span class="abbr-sep">:</span><span class="abbr-val">Interest on SB Account</span></div>
+                        <div class="abbr-item"><span class="abbr-key">MB</span><span class="abbr-sep">:</span><span class="abbr-val">Mobile Banking</span></div>
+                    </div>
+                </div>
+
+                <div class="fed-disclaimer">
+                    <p>DISCLAIMER: This computer generated statement contains the particulars of the transaction(s) in the account that have been updated till the time of day end operations of the CBS system of the Bank on theprevious working day and the same will not reflect the transaction(s) that have occurred in the account, if any, subsequent thereto. The Federal Bank Ltd. shall not be liable/responsible for want of fullparticulars of the transaction(s) at the time of the generation of this statement.</p>
+                    <p style="margin-top: 10px;">This is a computer generated statement which need not normally be signed. Contents of this statement will be considered correct if no error is reported within 21 days of the statement date.</p>
+                </div>
+
+                <div class="fed-end-stmt">****END OF STATEMENT****</div>
+            </div>`;
+        }
 
         // ── FOOTER ───────────────────────────────────────────────────────────
         html += `
         <div class="fed-footer ${isLast ? 'fed-footer-last' : ''}">
-            <div class="fed-footer-spacer"></div>
-            <div class="fed-footer-text">The Federal Bank Ltd. Corporate Office: Federal Towers, Market Rd, Periyar Nagar, Aluva, Kerala, 683101, Ph:0484 2630996 Website:www.federalbank.co.in</div>
+            <div class="fed-footer-text">
+                <div class="ff-l1">The Federal Bank Ltd. Corporate Office: Federal Towers, Market Rd, Periyar Nagar, Aluva, Kerala, 683101,</div>
+                <div class="ff-l2">Ph:0484 2630996 Website:www.federalbank.co.in</div>
+            </div>
             <div class="fed-footer-page">Page ${pageNum} of ${pageCount}</div>
         </div>
 
@@ -377,7 +419,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 10px 10px 30px;
+    padding: 8px 10px 10px 10px;
 }
 .fed-header-outer {
     margin: 25px 15px 0 15px;
@@ -413,7 +455,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
 
 .fed-header-right-logo {
     position: absolute;
-    right: 30px; 
+    right: 15px; 
     top: -50px; /* Moved down from -65px to balance vertical position */
     display: flex;
     align-items: center;
@@ -506,7 +548,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
     margin-top: 20pt;
 }
 .fed-tx-table thead tr {
-    background: #cbdcf4;
+    background: #98C6DA;
 }
 .fed-tx-table th {
     border: 1px solid #333;
@@ -563,29 +605,82 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
     margin-top: auto;
     margin-left: 15px;
     margin-right: 15px;
-    padding: 10px 0px 40px 0px; /* Moved up by increasing bottom padding */
-    border-top: 1.5pt solid #000;
+    padding: 18px 0px 40px 0px; 
+    border-top: 1.2pt solid #000;
     display: flex;
-    align-items: flex-start;
-    color: #111;
-    font-size: 8pt;
-}
-.fed-footer-spacer {
-    flex: 1; /* Pushes text to middle */
+    flex-direction: column;
+    align-items: center;
+    color: #000;
+    position: relative;
+    font-family: 'Times New Roman', Times, serif;
 }
 .fed-footer-text {
-    flex: 3; /* Takes center priority */
     text-align: center;
-    line-height: 1.2;
+    width: 80%;
 }
-.fed-footer-page {
-    flex: 1; /* Matches spacer for symmetry */
-    text-align: right;
-    white-space: nowrap;
+.ff-l1 {
+    font-size: 7.2pt;
     font-weight: normal;
 }
+.ff-l2 {
+    font-size: 7.2pt;
+    margin-top: 1px;
+}
+.fed-footer-page {
+    position: absolute;
+    right: 0;
+    top: 18px;
+    font-size: 7.5pt;
+    font-weight: normal;
+    font-family: Arial, Helvetica, sans-serif;
+}
 .fed-footer-last {
-    margin-top: 50px !important; /* Move footer closer to table only on last page */
+    margin-top: auto !important;
+}
+
+/* ── LAST PAGE EXTRAS ── */
+.fed-last-page-extras {
+    margin: 30px 15px 0 15px;
+    font-family: 'Times New Roman', Times, serif;
+    color: #000;
+}
+.fed-abbr-section {
+    margin-bottom: 25px;
+}
+.abbr-title {
+    font-size: 11pt;
+    margin-bottom: 12px;
+}
+.abbr-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 80px;
+    font-size: 8pt;
+}
+.abbr-item {
+    display: flex;
+    align-items: flex-start;
+}
+.abbr-key { width: 110px; flex-shrink: 0; }
+.abbr-sep { width: 25px; flex-shrink: 0; }
+.abbr-val { flex-grow: 1; }
+
+.grand-total-row td {
+    border: 1px solid #333;
+    padding: 4px 5px;
+}
+
+.fed-disclaimer {
+    font-size: 7.2pt;
+    line-height: 1.5;
+    text-align: justify;
+    margin-bottom: 35px;
+}
+.fed-end-stmt {
+    text-align: center;
+    font-size: 6pt;
+    font-weight: normal;
+    margin-bottom: 20px;
 }
 
 /* PRINT */
