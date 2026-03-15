@@ -130,6 +130,12 @@ function extractAccountInfo(rawText) {
         if (ifscMatch) info.ifsc = ifscMatch[1].toUpperCase();
     }
 
+    // Global Mobile Number Fallback
+    if (!info.mobileNumber) {
+        const mobileMatch = text.match(/(?:Regd\.\s*Mobile|Mobile|Phone|Contact)\s*(?:Number|No)?\s*[:\-]?\s*(\+?\d[\d\s\-]{8,15}\d)/i);
+        if (mobileMatch) info.mobileNumber = mobileMatch[1].trim();
+    }
+
     // Special case for Email (ensure we don't grab branch email for customer if both exist)
     const allEmails = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
     if (allEmails.length > 0) {
@@ -205,7 +211,8 @@ function extractAccountInfo(rawText) {
             "Account Open Date", "Account Status", "Mode of Operation", 
             "Joint Holders", "Nomination", "Currency", "Date of Issue",
             "Communication Address", "Address Last Updated On", "Regd. Mobile Number",
-            "Email ID", "Type of Account", "Scheme", "IFSC", "MICR Code",
+            "Mobile No", "Mobile Number", "Contact Number", "Phone Number",
+            "Email ID", "Email", "Type of Account", "Scheme", "IFSC", "MICR Code",
             "SWIFT Code", "Effective Available Balance", "Branch"
         ];
         
@@ -263,11 +270,17 @@ function extractAccountInfo(rawText) {
                 const parts = line.split(/Email ID\s*:/i);
                 if (parts[1]) info.email = cleanupValue(parts[1]);
             }
-            if (line.includes("Regd. Mobile Number") || line.includes("Mobile Number") || line.includes("Mobile No")) {
-                const match = line.match(/(?:Regd\.\s*)?Mobile\s*(?:Number|No)\s*:\s*(.*)/i);
-                if (match && match[1]) {
+            if (line.includes("Regd. Mobile Number") || line.includes("Mobile Number") || line.includes("Mobile No") || line.includes("Contact Number")) {
+                const match = line.match(/(?:Regd\.\s*)?(?:Mobile|Contact)\s*(?:Number|No)?\s*[:\-]?\s*(.*)/i);
+                if (match && match[1] && match[1].trim().length > 5) {
                     const val = cleanupValue(match[1]);
-                    if (val && val.length >= 10) info.mobileNumber = val;
+                    if (val && val.length >= 8) info.mobileNumber = val;
+                } else if (i + 1 < lines.length) {
+                    // Check next line for value if current line is empty
+                    const val = cleanupValue(lines[i+1]);
+                    if (val && val.length >= 8 && /^\+?\d/.test(val)) {
+                        info.mobileNumber = val;
+                    }
                 }
             }
             if (line.includes("Customer ID") && line.includes(":")) {
