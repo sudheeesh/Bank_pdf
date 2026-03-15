@@ -328,7 +328,7 @@ async function smartParse(filePath) {
 }
 
 function extractAccountInfoFromParsed(parsed) {
-    const info = { accountName: "", accountNumber: "", branch: "", ifsc: "", period: "", bankName: "", cif: "", product: "", micr: "", currency: "", accountStatus: "", nominee: "", ckyc: "", email: "", address: "", customerPinCode: "", branchCode: "", branchEmail: "", branchPhone: "", accountOpenDate: "", branchPinCode: "", branchAddress: "" };
+    const info = { accountName: "", accountNumber: "", branch: "", ifsc: "", period: "", bankName: "", cif: "", product: "", micr: "", currency: "", accountStatus: "", nominee: "", ckyc: "", email: "", address: "", customerPinCode: "", mobileNumber: "", branchCode: "", branchEmail: "", branchPhone: "", accountOpenDate: "", branchPinCode: "", branchAddress: "" };
 
     if (!parsed || !parsed.pages || !parsed.pages.length) return info;
 
@@ -349,6 +349,7 @@ function extractAccountInfoFromParsed(parsed) {
         email: /^Email/i,
         branchCode: /Branch\s*Code/i,
         branchPhone: /Branch\s*Phone/i,
+        mobileNumber: /Regd\.\s*Mobile\s*Number|Mobile\s*No/i,
         accountOpenDate: /Account\s*(?:Open|Opening)\s*Date/i,
         period: /Statement\s*From|Period/i,
         pin: /Pin\s*Code/i,

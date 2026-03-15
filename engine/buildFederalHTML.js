@@ -388,23 +388,24 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
     line-height: 1.25;
 }
 .fed-website { font-size: 8pt; margin-bottom: 3px; font-weight: 300; }
-.fed-phone-section { display: flex; align-items: center; margin-bottom: 2px; margin-top: 2px; }
+.fed-phone-section { display: flex; align-items: center; margin-bottom: 4px; margin-top: 4px; }
 .fed-phone-box {
-    border: 1px solid rgba(255,255,255,0.4);
+    border: 1px solid #ffffff;
     background: #006ebc;
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 10px;
+    margin-right: 12px;
     border-radius: 1px;
+    padding: 1px 0 0 1px; /* Micro-adjustment to center the tilted icon visually */
 }
-.fed-phone-svg { width: 14px; height: 14px; color: #fff; }
-.fed-phone-info { font-size: 6pt; line-height: 1.1; }
-.fed-phone-label { font-size: 6pt; font-weight: 400; text-transform: uppercase; color: #fff; opacity: 0.8; }
-.fed-phone-num { font-size: 8pt; font-weight: bold; }
-.fed-email-hdr { font-size: 7pt;  color: #fff; }
+.fed-phone-svg { width: 16px; height: 16px; color: #fff; }
+.fed-phone-info { font-size: 6.5pt; line-height: 1.2; }
+.fed-phone-label { font-size: 6pt; font-weight: 400; text-transform: uppercase; color: #fff; opacity: 0.9; }
+.fed-phone-num { font-size: 8.5pt; font-weight: bold; }
+.fed-email-hdr { font-size: 7.5pt;  color: #fff; }
 
 .page.not-first-page {
     padding-top: 12px !important; /* Set to 12px as requested */
@@ -412,8 +413,8 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
 
 .fed-header-right-logo {
     position: absolute;
-    right: -15px; 
-    top: -45px; /* Balanced for 220px height */
+    right: 30px; 
+    top: -50px; /* Moved down from -65px to balance vertical position */
     display: flex;
     align-items: center;
     z-index: 10;
@@ -423,7 +424,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
     width: auto;
     object-fit: contain;
     display: block;
-    margin-bottom: 4px
+    margin-bottom: 10px;
      /* Increased gap to ensure no contact with info box */
 }
 /* ── GOLD BAR ── */
