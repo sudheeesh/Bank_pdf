@@ -174,7 +174,7 @@ function buildFederalHTML(opts) {
                 const fR = RIGHT_FIELDS[i];
 
                 let rowStyle = '';
-                if (i === 2) rowStyle = 'margin-top: 20px;'; // Balanced gap
+                if (i === 2) rowStyle = 'margin-top: 12px;'; // Tightened gap
                 else if (i > 0) rowStyle = 'margin-top: 6px;'; // Tightened row spacing
 
                 const styleAttr = rowStyle ? ` style="${rowStyle}"` : '';
@@ -367,8 +367,8 @@ function buildFederalHTML(opts) {
                 </div>
 
                 <div class="fed-disclaimer">
-                    <p>DISCLAIMER: This computer generated statement contains the particulars of the transaction(s) in the account that have been updated till the time of day end operations of the CBS system of the Bank on theprevious working day and the same will not reflect the transaction(s) that have occurred in the account, if any, subsequent thereto. The Federal Bank Ltd. shall not be liable/responsible for want of fullparticulars of the transaction(s) at the time of the generation of this statement.</p>
-                    <p style="margin-top: 10px;">This is a computer generated statement which need not normally be signed. Contents of this statement will be considered correct if no error is reported within 21 days of the statement date.</p>
+                    <p>${escHtml('DISCLAIMER: This computer generated statement contains the particulars of the transaction(s) in the account that have been updated till the time of day end operations of the CBS system of the Bank on the previous working day and the same will not reflect the transaction(s) that have occurred in the account, if any, subsequent thereto. The Federal Bank Ltd. shall not be liable/responsible for want of full particulars of the transaction(s) at the time of the generation of this statement.')}</p>
+                    <p style="margin-top: 2px;">This is a computer generated statement which need not normally be signed. Contents of this statement will be considered correct if no error is reported within 21 days of the statement date.</p>
                 </div>
 
                 <div class="fed-end-stmt">****END OF STATEMENT****</div>
@@ -422,7 +422,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
     padding: 8px 10px 10px 10px;
 }
 .fed-header-outer {
-    margin: 25px 15px 0 15px;
+    margin: 12px 15px 0 15px;
 }
 .fed-header-left {
     color: #fff;
@@ -455,7 +455,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
 
 .fed-header-right-logo {
     position: absolute;
-    right: 15px; 
+    right: -10px; 
     top: -50px; /* Moved down from -65px to balance vertical position */
     display: flex;
     align-items: center;
@@ -471,7 +471,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
 }
 /* ── GOLD BAR ── */
 .fed-gold-bar {
-    height: 5px;
+    height: 9px;
     background: #f8a818;
     width: 100%;
     margin-bottom: 0;
@@ -655,14 +655,15 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
     display: grid;
     grid-template-columns: auto auto;
     justify-content: start;
-    gap: 8px 120px;
+    gap: 12px 140px;
     font-size: 8pt;
+    margin-left: 15px; /* Aligned with title */
 }
 .abbr-item {
     display: flex;
     align-items: flex-start;
 }
-.abbr-key { width: 55px; flex-shrink: 0; }
+.abbr-key { width: 160px; flex-shrink: 0; }
 .abbr-sep { width: 12px; flex-shrink: 0; }
 .abbr-val { flex-grow: 1; }
 
@@ -672,10 +673,10 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
 }
 
 .fed-disclaimer {
-    font-size: 7.2pt;
-    line-height: 1.5;
+    font-size: 6.2pt;
+    line-height: 1.2;
     text-align: justify;
-    margin-bottom: 35px;
+    margin-bottom: 25px;
 }
 .fed-end-stmt {
     text-align: center;
