@@ -465,6 +465,7 @@ router.post("/api/build-statement", async (req, res) => {
             address,
             customerPinCode,
             mobileNumber,
+            companyName,
             branchCode, branchEmail: branchEmailField, branchPhone, accountOpenDate, branchPinCode, branchAddress,
         } = req.body;
 
@@ -500,7 +501,7 @@ router.post("/api/build-statement", async (req, res) => {
             branch: branch || "",
             ifsc: ifsc || "",
             period: period || "",
-            cif, product, micr, currency, accountStatus, nominee, ckyc, email, address, customerPinCode, mobileNumber,
+            cif, product, micr, currency, accountStatus, nominee, ckyc, email, address, customerPinCode, mobileNumber, companyName,
             branchCode, branchEmail: branchEmailField, branchPhone, accountOpenDate, branchPinCode, branchAddress,
             targetMaxPages: maxPages,
         });
@@ -606,6 +607,7 @@ router.post("/api/smart-modify", async (req, res) => {
             targetMaxPages, accountName, accountNumber, branch, ifsc, period, bankName,
             cif, product, micr, currency, accountStatus, nominee, ckyc, email, address, customerPinCode,
             mobileNumber,
+            companyName,
             branchCode, branchEmail: branchEmailField, branchPhone, accountOpenDate, branchPinCode, branchAddress } = req.body;
         if (!fileId) return res.status(400).json({ error: "fileId required" });
 
@@ -658,7 +660,7 @@ router.post("/api/smart-modify", async (req, res) => {
             ifsc: ifsc || "",
             period: period || "",
             bankName: bankName || "BANK",
-            cif, product, micr, currency, accountStatus, nominee, ckyc, email, address, customerPinCode, mobileNumber,
+            cif, product, micr, currency, accountStatus, nominee, ckyc, email, address, customerPinCode, mobileNumber, companyName,
             branchCode, branchEmail: branchEmailField, branchPhone, accountOpenDate, branchPinCode, branchAddress,
             targetMaxPages: maxPages,
         });
@@ -697,7 +699,8 @@ router.post("/api/smart-condensed", async (req, res) => {
             period,
             bankName,
             cif, product, micr, currency, accountStatus, nominee, ckyc, email, address, customerPinCode, mobileNumber,
-            branchCode, branchEmail: branchEmailField, branchPhone, accountOpenDate, branchPinCode, branchAddress
+            branchCode, branchEmail: branchEmailField, branchPhone, accountOpenDate, branchPinCode, branchAddress,
+            companyName
         } = req.body;
 
         if (!fileId) return res.status(400).json({ error: "fileId required" });
@@ -750,7 +753,7 @@ router.post("/api/smart-condensed", async (req, res) => {
             ifsc: ifsc || "",
             period: period || "",
             bankName: bankName || "BANK",
-            cif, product, micr, currency, accountStatus, nominee, ckyc, email, address, customerPinCode, mobileNumber,
+            cif, product, micr, currency, accountStatus, nominee, ckyc, email, address, customerPinCode, mobileNumber, companyName,
             branchCode, branchEmail: branchEmailField, branchPhone, accountOpenDate, branchPinCode, branchAddress,
             targetMaxPages: maxPages,
         });
@@ -776,6 +779,7 @@ router.post("/api/smart-preview", async (req, res) => {
         const { fileId, openingBalance, closingBalance, maxMonthlyDebit, maxMonthlyCredit, maxTxnDebit, maxTxnCredit,
             targetMaxPages, accountName, accountNumber, branch, ifsc, period, bankName,
             cif, product, micr, currency, accountStatus, nominee, ckyc, email, address, customerPinCode, mobileNumber,
+            companyName,
             branchCode, branchEmail: branchEmailField, branchPhone, accountOpenDate, branchPinCode, branchAddress } = req.body;
         const filePath = path.join("uploads", fileId);
         if (!fs.existsSync(filePath)) return res.status(404).json({ error: "File not found." });
@@ -821,7 +825,7 @@ router.post("/api/smart-preview", async (req, res) => {
             ifsc: ifsc || "",
             period: period || "",
             bankName: bankName || "BANK",
-            cif, product, micr, currency, accountStatus, nominee, ckyc, email, address, customerPinCode, mobileNumber,
+            cif, product, micr, currency, accountStatus, nominee, ckyc, email, address, customerPinCode, mobileNumber, companyName,
             branchCode, branchEmail: branchEmailField, branchPhone, accountOpenDate, branchPinCode, branchAddress,
             targetMaxPages: maxPages,
         });

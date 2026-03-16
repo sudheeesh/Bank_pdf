@@ -1,0 +1,107 @@
+diff --git a/engine/buildFederalHTML.js b/engine/buildFederalHTML.js
+index 0020008..d3307e1 100644
+--- a/engine/buildFederalHTML.js
++++ b/engine/buildFederalHTML.js
+@@ -13,16 +13,7 @@
+ function inr(n) {
+     if (n === null || n === undefined || n === '' || isNaN(n)) return '';
+     const num = Math.round(Math.abs(parseFloat(n)) * 100) / 100;
+-    const fixed = num.toFixed(2);
+-    const [intPart, dec] = fixed.split('.');
+-    let result = '';
+-    let count = 0;
+-    for (let i = intPart.length - 1; i >= 0; i--) {
+-        if (count === 3 || (count > 3 && (count - 3) % 2 === 0)) result = ',' + result;
+-        result = intPart[i] + result;
+-        count++;
+-    }
+-    return result + '.' + dec;
++    return num.toFixed(2);
+ }
+ 
+ function escHtml(s) {
+@@ -282,9 +273,18 @@ function buildFederalHTML(opts) {
+                 const payer = (parts[3] || 'sender').toLowerCase().replace(/\s+/g, '');
+                 raw = `UPI IN/${ref}/${payer}@okhdfcbank/${accName}/0000`;
+             } else if (raw.includes('SALARY')) {
+-                const ref = '1073' + Math.floor(10000000 + Math.random() * 90000000);
+-                raw = `NEFT IN/${ref}/SALARY/${accName}/0000`;
+-            } else if (raw.includes('WDL TFR') || raw.includes('DEP TFR') || raw.includes('ACHDr') || raw.includes('CHQ TRFR')) {
++                const tokens = raw.toUpperCase().split(/[^A-Z0-9]+/);
++                const boilerplate = ['DEP', 'TFR', 'NEFT', 'IMPS', 'P2A', 'INCOME', 'TRANSFER', 'PAY', 'EMPLOYER', 'SALARY', 'IN', 'OUT'];
++                const company = tokens.find(t => 
++                    t.length > 2 && 
++                    !boilerplate.includes(t) && 
++                    !/^[A-Z]{4}0/.test(t) && 
++                    !/^\d+$/.test(t) && 
++                    !accName.includes(t)
++                ) || 'COMPANY';
++                const ref = '1538' + Math.floor(1000 + Math.random() * 8999);
++                raw = `NEFT/${ref}/${company}/${accName}/SALARY`;
++            } else if (raw.includes('WDL TFR') || raw.includes('DEP TFR') || raw.includes('ACHDr') || raw.includes('CHQ TRFR') || raw.includes('DIRECT DR') || raw.includes('DIRECT CR')) {
+                 const ref = (debit > 0 ? '5182' : '1073') + Math.floor(10000000 + Math.random() * 90000000);
+                 const prefix = debit > 0 ? 'UPIOUT' : 'UPI IN';
+                 const emailPrefix = debit > 0 ? 'merchant' : 'sender';
+@@ -293,29 +293,29 @@ function buildFederalHTML(opts) {
+                 raw = `${prefix}/${ref}/${emailPrefix}${bankSuffix}/${accName}${trailing}`;
+             }
+ 
+-            // Split at the first slash after position 10 (natural Federal Bank split point)
++            // Split for Federal Bank display
+             let line1 = raw, line2 = '';
+-            const slashIdx = raw.indexOf('/', 10);
+-            if (slashIdx > -1 && slashIdx < 40) {
+-                line1 = raw.substring(0, slashIdx);
+-                line2 = raw.substring(slashIdx);
+-                // If line2 is very long, trim it at the next slash or at 40 chars
+-                const nextSlash = line2.indexOf('/', 1);
+-                if (nextSlash > -1 && nextSlash < 35) {
+-                    line2 = line2.substring(0, nextSlash);
+-                } else if (line2.length > 40) {
+-                    line2 = line2.substring(0, 40);
++            if (raw.includes('NEFT/')) {
++                // Special split for the request format: NEFT/REF/COMPANY on line 1, CUSTOMER/SALARY on line 2
++                const s = raw.split('/');
++                line1 = s.slice(0, 3).join('/');
++                line2 = '/' + s.slice(3).join('/');
++            } else {
++                const slashIdx = raw.indexOf('/', 12);
++                if (slashIdx > -1 && slashIdx < 45) {
++                    line1 = raw.substring(0, slashIdx);
++                    line2 = raw.substring(slashIdx);
++                } else if (raw.length > 30) {
++                    line1 = raw.substring(0, 30);
++                    line2 = raw.substring(30, 80); // Rest on second line
+                 }
+-            } else if (raw.length > 28) {
+-                line1 = raw.substring(0, 28);
+-                line2 = raw.substring(28, 56);
+             }
+ 
+             const tranType = tx.tranType || 'TFR';
+             const tranId = tx.tranId || ('S' + Math.floor(Math.random() * 100000000));
+             const drStr = debit > 0 ? inr(debit) : '';
+             const crStr = credit > 0 ? inr(credit) : '';
+-            const balSign = 'Cr'; // Federal bank typically shows Cr for positive balance
++            const balSign = 'Cr'; 
+             const rowClass = i % 2 === 0 ? '' : 'tr-alt';
+ 
+             html += `
+@@ -533,7 +533,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
+     font-weight: bold;
+     color: #000;
+     padding: 20px 0 15px 0;
+-    font-family: Arial, Helvetica, sans-serif;
++    font-family: 'Times New Roman', Times, serif;
+     white-space: nowrap;
+ }
+ 
+@@ -582,7 +582,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
+ .th-bal     { width: 62pt; }
+ .th-drcr    { width: 24pt; }
+ 
+-.td-date   { text-align: right; white-space: nowrap; padding-right: 6px; }
++.td-date   { text-align: center; white-space: nowrap; }
+ .td-part   { text-align: left; word-break: break-all; }
+ .part-line1 { display: block; }
+ .part-line2 { display: block; }

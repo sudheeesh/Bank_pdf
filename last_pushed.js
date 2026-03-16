@@ -13,7 +13,16 @@
 function inr(n) {
     if (n === null || n === undefined || n === '' || isNaN(n)) return '';
     const num = Math.round(Math.abs(parseFloat(n)) * 100) / 100;
-    return num.toFixed(2);
+    const fixed = num.toFixed(2);
+    const [intPart, dec] = fixed.split('.');
+    let result = '';
+    let count = 0;
+    for (let i = intPart.length - 1; i >= 0; i--) {
+        if (count === 3 || (count > 3 && (count - 3) % 2 === 0)) result = ',' + result;
+        result = intPart[i] + result;
+        count++;
+    }
+    return result + '.' + dec;
 }
 
 function escHtml(s) {
@@ -45,16 +54,18 @@ function buildFederalHTML(opts) {
         email, address, customerPinCode,
         branchCode, branchEmail, branchPhone, accountOpenDate, branchPinCode, branchAddress,
         targetMaxPages, logoSrc,
-        effectiveBalance, dateOfIssue, branchSolId,
+        // Federal-specific extras
         mobileNumber, swiftCode, scheme, modeOfOperation, jointHolders, nomination,
-        companyName,
+        effectiveBalance, dateOfIssue, branchSolId,
     } = opts;
 
     const totalWithdrawals = transactions.reduce((sum, tx) => sum + (tx.newDebit !== undefined ? tx.newDebit : (tx.debit || 0)), 0);
     const totalDeposits = transactions.reduce((sum, tx) => sum + (tx.newCredit !== undefined ? tx.newCredit : (tx.credit || 0)), 0);
 
-    const ROW_FIRST = 15;
-    const ROW_OTHERS = 30;
+    // Federal: page 1 has room for fewer rows (big header + info box)
+    // Subsequent pages: more rows
+    const ROW_FIRST = 15; // Set to 15 as requested by user
+    const ROW_OTHERS = 28; // Reduced from 31 to make room for last-page extras and footer
 
     const totalTx = transactions.length;
     const pages = [];
@@ -163,8 +174,8 @@ function buildFederalHTML(opts) {
                 const fR = RIGHT_FIELDS[i];
 
                 let rowStyle = '';
-                if (i === 2) rowStyle = 'margin-top: 12px;';
-                else if (i > 0) rowStyle = 'margin-top: 6px;';
+                if (i === 2) rowStyle = 'margin-top: 12px;'; // Tightened gap
+                else if (i > 0) rowStyle = 'margin-top: 6px;'; // Tightened row spacing
 
                 const styleAttr = rowStyle ? ` style="${rowStyle}"` : '';
 
@@ -190,6 +201,9 @@ function buildFederalHTML(opts) {
             <div class="fed-stmt-title">Statement of Account for the period ${escHtml(periodStr)}</div>`;
         }
 
+        if (!isFirst) {
+            html += `<div style="height: 12px; width: 100%;"></div>`; // Set to 12px as requested
+        }
         html += `
         <table class="fed-tx-table">
             <colgroup>
@@ -203,8 +217,11 @@ function buildFederalHTML(opts) {
                 <col class="th-dep">
                 <col class="th-bal">
                 <col class="th-drcr">
-            </colgroup>
-            ${isFirst ? `<thead>
+            </colgroup>`;
+
+        if (isFirst) {
+            html += `
+            <thead>
                 <tr>
                     <th class="th-date">Date</th>
                     <th class="th-valdate">Value Date</th>
@@ -217,7 +234,10 @@ function buildFederalHTML(opts) {
                     <th class="th-bal">Balance</th>
                     <th class="th-drcr">DR<br>/CR</th>
                 </tr>
-            </thead>` : ''}
+            </thead>`;
+        }
+
+        html += `
             <tbody>`;
 
         // Opening Balance row (first page only)
@@ -238,61 +258,64 @@ function buildFederalHTML(opts) {
             const credit = tx.newCredit !== undefined ? tx.newCredit : (tx.credit || 0);
             const balance = tx.newBalance !== undefined ? tx.newBalance : (tx.balance || 0);
 
+            // Split long descriptions into max 2 lines like real Federal Bank statement
             let raw = '';
             if (tx.descCells && tx.descCells.length) {
                 raw = tx.descCells.map(c => c.text).join(' ');
             } else {
                 raw = tx.description || tx.desc || '';
             }
+            // Strip any leading date (e.g. "01-JUL-2025 ") that sometimes appears in description
             raw = raw.replace(/^\d{2}-[A-Z]{3}-\d{4}\s+/, '');
 
+            // Rewrite auto-generated descriptions to strictly match Federal Bank layout & account name
             const accName = (accountName || 'CUSTOMER').toUpperCase().replace(/[^A-Z0-9 ]/g, '').trim().substring(0, 20);
 
             if (raw.includes('UPI/DR')) {
                 const parts = raw.split('/');
                 const ref = parts[2] || '518286171996';
                 const payee = (parts[3] || 'merchant').toLowerCase().replace(/\s+/g, '');
-                raw = `UPIOUT/${ref}/${payee}@ybl/5462`;
+                raw = `UPIOUT/${ref}/${payee}@ybl/${accName}/5462`;
             } else if (raw.includes('UPI/CR')) {
                 const parts = raw.split('/');
                 const ref = parts[2] || '107352626831';
                 const payer = (parts[3] || 'sender').toLowerCase().replace(/\s+/g, '');
-                raw = `UPI IN/${ref}/${payer}@okhdfcbank/0000`;
-            } else if (raw.includes('SALARY') && !raw.startsWith('NEFT/')) {
-                const ref = '' + Math.floor(11000000 + Math.random() * 88000000);
-                const company = companyName || 'MODULUSTEC';
-                const shortAccName = accName.split(' ')[1] || accName.split(' ')[0];
-                raw = `NEFT/${ref}/${company}/${shortAccName}/SALARY`;
+                raw = `UPI IN/${ref}/${payer}@okhdfcbank/${accName}/0000`;
+            } else if (raw.includes('SALARY')) {
+                const ref = '1073' + Math.floor(10000000 + Math.random() * 90000000);
+                raw = `NEFT IN/${ref}/SALARY/${accName}/0000`;
             } else if (raw.includes('WDL TFR') || raw.includes('DEP TFR') || raw.includes('ACHDr') || raw.includes('CHQ TRFR')) {
                 const ref = (debit > 0 ? '5182' : '1073') + Math.floor(10000000 + Math.random() * 90000000);
                 const prefix = debit > 0 ? 'UPIOUT' : 'UPI IN';
                 const emailPrefix = debit > 0 ? 'merchant' : 'sender';
                 const bankSuffix = debit > 0 ? '@ybl' : '@oksbi';
                 const trailing = debit > 0 ? '/5399' : '/0000';
-                raw = `${prefix}/${ref}/${emailPrefix}${bankSuffix}${trailing}`;
+                raw = `${prefix}/${ref}/${emailPrefix}${bankSuffix}/${accName}${trailing}`;
             }
 
-            // Strictly 2 lines logic - split at the second slash to match image
+            // Split at the first slash after position 10 (natural Federal Bank split point)
             let line1 = raw, line2 = '';
-            const firstSlash = raw.indexOf('/');
-            const secondSlash = firstSlash > -1 ? raw.indexOf('/', firstSlash + 1) : -1;
-
-            if (secondSlash > -1) {
-                line1 = raw.substring(0, secondSlash);
-                line2 = raw.substring(secondSlash);
-            } else if (raw.length > 25) {
-                line1 = raw.substring(0, 25);
-                line2 = raw.substring(25);
+            const slashIdx = raw.indexOf('/', 10);
+            if (slashIdx > -1 && slashIdx < 40) {
+                line1 = raw.substring(0, slashIdx);
+                line2 = raw.substring(slashIdx);
+                // If line2 is very long, trim it at the next slash or at 40 chars
+                const nextSlash = line2.indexOf('/', 1);
+                if (nextSlash > -1 && nextSlash < 35) {
+                    line2 = line2.substring(0, nextSlash);
+                } else if (line2.length > 40) {
+                    line2 = line2.substring(0, 40);
+                }
+            } else if (raw.length > 28) {
+                line1 = raw.substring(0, 28);
+                line2 = raw.substring(28, 56);
             }
-            // Ensure no line exceeds the visual limit
-            if (line1.length > 40) line1 = line1.substring(0, 40);
-            if (line2.length > 40) line2 = line2.substring(0, 40);
 
             const tranType = tx.tranType || 'TFR';
             const tranId = tx.tranId || ('S' + Math.floor(Math.random() * 100000000));
             const drStr = debit > 0 ? inr(debit) : '';
             const crStr = credit > 0 ? inr(credit) : '';
-            const balSign = 'Cr';
+            const balSign = 'Cr'; // Federal bank typically shows Cr for positive balance
             const rowClass = i % 2 === 0 ? '' : 'tr-alt';
 
             html += `
@@ -313,6 +336,7 @@ function buildFederalHTML(opts) {
             </tr>`;
         });
 
+        // Last Page extra rows & sections
         if (isLast) {
             html += `
             <tr class="grand-total-row">
@@ -351,6 +375,7 @@ function buildFederalHTML(opts) {
             </div>`;
         }
 
+        // ── FOOTER ───────────────────────────────────────────────────────────
         html += `
         <div class="fed-footer ${isLast ? 'fed-footer-last' : ''}">
             <div class="fed-footer-text">
@@ -360,11 +385,13 @@ function buildFederalHTML(opts) {
             <div class="fed-footer-page">Page ${pageNum} of ${pageCount}</div>
         </div>
 
-        </div>`;
+        </div>`; // close .page
 
         finalPagesHtml += html;
-    }
+    } // End of loop
 
+
+    // ── CSS ──────────────────────────────────────────────────────────────────
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -373,23 +400,19 @@ function buildFederalHTML(opts) {
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; background: #fff; }
 
+/* PAGE */
 .page {
     width: 210mm;
-    min-height: 297mm;
+    height: 297mm; /* Forced fixed height to prevent bleeding */
     padding: 0;
     display: flex;
     flex-direction: column;
     page-break-after: always;
-    position: relative;
-    overflow: hidden; /* Prevent bleed while debugging height */
+    /* Removed overflow: hidden to prevent footer/disclaimer truncation */
 }
 .page:last-child { page-break-after: avoid; }
 
-.page.not-first-page {
-    padding-top: 12px !important;
-}
-
-.fed-header-outer { margin: 12px 15px 0 15px; }
+/* ── HEADER BAR ── */
 .fed-header-bar {
     width: 100%;
     background: #004c97;
@@ -398,119 +421,271 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
     justify-content: space-between;
     padding: 8px 10px 10px 10px;
 }
-.fed-header-left { color: #fff; font-size: 7pt; line-height: 1.25; }
+.fed-header-outer {
+    margin: 12px 15px 0 15px;
+}
+.fed-header-left {
+    color: #fff;
+    font-size: 7pt;
+    line-height: 1.25;
+}
 .fed-website { font-size: 8pt; margin-bottom: 3px; font-weight: 300; }
 .fed-phone-section { display: flex; align-items: center; margin-bottom: 4px; margin-top: 4px; }
 .fed-phone-box {
     border: 1px solid #ffffff;
     background: #006ebc;
-    width: 26px; height: 26px;
-    display: flex; align-items: center; justify-content: center;
-    margin-right: 12px; border-radius: 1px;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    border-radius: 1px;
+    padding: 1px 0 0 1px; /* Micro-adjustment to center the tilted icon visually */
 }
 .fed-phone-svg { width: 16px; height: 16px; color: #fff; }
 .fed-phone-info { font-size: 6.5pt; line-height: 1.2; }
-.fed-phone-label { font-size: 6pt; text-transform: uppercase; color: #fff; opacity: 0.9; }
+.fed-phone-label { font-size: 6pt; font-weight: 400; text-transform: uppercase; color: #fff; opacity: 0.9; }
 .fed-phone-num { font-size: 8.5pt; font-weight: bold; }
 .fed-email-hdr { font-size: 7.5pt;  color: #fff; }
 
+.page.not-first-page {
+    padding-top: 12px !important; /* Set to 12px as requested */
+}
+
 .fed-header-right-logo {
     position: absolute;
-    right: -10px; top: -50px; 
-    display: flex; align-items: center; z-index: 10;
+    right: -10px; 
+    top: -50px; /* Moved down from -65px to balance vertical position */
+    display: flex;
+    align-items: center;
+    z-index: 10;
 }
 .fed-logo-img {
-    height: 220px; width: auto; object-fit: contain; display: block; margin-bottom: 10px;
+    height: 220px; /* Increased to 220px as requested */
+    width: auto;
+    object-fit: contain;
+    display: block;
+    margin-bottom: 10px;
+     /* Increased gap to ensure no contact with info box */
 }
-.fed-gold-bar { height: 9px; background: #f8a818; width: 100%; }
+/* ── GOLD BAR ── */
+.fed-gold-bar {
+    height: 9px;
+    background: #f8a818;
+    width: 100%;
+    margin-bottom: 0;
+}
 
+/* ── ACCOUNT INFO BOX ── */
 .fed-info-box {
     margin: 4px 15px 0px 15px;
     border: 0.5pt solid #555; 
     padding: 8px 10px 1px 12px;
+    display: flex;
+    flex-direction: column;
 }
 .fed-info-row {
-    display: flex; width: 100%; align-items: flex-start;
-    min-height: 21px; font-size: 7pt; line-height: normal;
+    display: flex;
+    width: 100%;
+    align-items: flex-start;
+    min-height: 21px; /* Balanced height */
+    font-size: 7pt;
+    line-height: normal;
     font-family: 'Times New Roman', Times, serif;
 }
-.fed-info-group:first-child { width: 55%; display: flex; }
-.fed-info-group:last-child { width: 45%; display: flex; }
-.fi-lbl { width: 180px; color: #111; white-space: nowrap; flex-shrink: 0; }
-.fi-sep { width: 15px; color: #111; flex-shrink: 0; }
-.fi-val { color: #000; flex-grow: 1; }
+.fed-info-group {
+    display: flex;
+    align-items: flex-start;
+}
+.fed-info-group:first-child {
+    width: 55%;
+}
+.fed-info-group:last-child {
+    width: 45%;
+}
+.fed-info-group:last-child .fi-lbl {
+    width: 130px;
+}
+.fi-lbl {
+    width: 180px; /* Base width for labels */
+    color: #111;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.fi-sep {
+    width: 15px;
+    text-align: left;
+    color: #111;
+    flex-shrink: 0;
+}
+.fi-val {
+    color: #000;
+    font-weight: normal;
+    flex-grow: 1;
+}
 
+/* ── STATEMENT TITLE ── */
 .fed-stmt-title {
-    text-align: left; margin-left: 180px;
-    font-size: 12pt; font-weight: bold; color: #000;
+    text-align: left;
+    margin-left: 180px;
+    font-size: 12pt;
+    font-weight: bold;
+    color: #000;
     padding: 20px 0 15px 0;
-    font-family: 'Times New Roman', Times, serif;
+    font-family: Arial, Helvetica, sans-serif;
     white-space: nowrap;
 }
 
+/* ── TRANSACTION TABLE ── */
 .fed-tx-table {
-    width: calc(100% - 30px); margin: 0 15px; border-collapse: collapse;
+    width: calc(100% - 30px);
+    margin: 0 15px;
+    border-collapse: collapse;
     font-family: 'Times New Roman', Times, serif;
 }
-.fed-tx-table thead tr { background: #98C6DA; }
+.stmt-not-first {
+    margin-top: 20pt;
+}
+.fed-tx-table thead tr {
+    background: #98C6DA;
+}
 .fed-tx-table th {
-    border: 1px solid #333; padding: 5px 4px;
-    font-size: 7pt; font-weight: 900; text-align: center;
-    vertical-align: middle; color: #000;
+    border: 1px solid #333;
+    padding: 7px 4px;
+    font-size: 7.5pt;
+    font-weight: 900;
+    text-align: center;
+    vertical-align: middle;
+    color: #000;
 }
 .fed-tx-table td {
-    border: 1px solid #333; padding: 1px 5px;
-    vertical-align: top; font-size: 7pt; font-weight: 500;
-    line-height: 1.2; color: #000;
+    border: 1px solid #333;
+    padding: 2px 5px; /* Tighter padding to save vertical space */
+    vertical-align: top;
+    font-size: 7.5pt;
+    font-weight: 500;
+    line-height: 1.3;
+    color: #000;
 }
 .tr-alt { background: #fff; }
 
-.th-date { width: 62pt; }
+/* Column widths matching original Federal Bank PDF */
+.th-date    { width: 62pt; }
 .th-valdate { width: 62pt; }
-.th-part { }
-.th-ttype { width: 34pt; }
-.th-tid { width: 58pt; }
-.th-chq { width: 42pt; }
-.th-wd { width: 58pt; }
-.th-dep { width: 58pt; }
-.th-bal { width: 62pt; }
-.th-drcr { width: 24pt; }
+.th-part    { }
+.th-ttype   { width: 34pt; }
+.th-tid     { width: 58pt; }
+.th-chq     { width: 42pt; }
+.th-wd      { width: 58pt; }
+.th-dep     { width: 58pt; }
+.th-bal     { width: 62pt; }
+.th-drcr    { width: 24pt; }
 
-.td-date { text-align: center; white-space: nowrap; padding-right: 6px; }
-.td-part { text-align: left; white-space: nowrap; overflow: hidden; }
-.part-line1, .part-line2 { height: 11.5pt; line-height: 11.5pt; overflow: hidden; }
+.td-date   { text-align: right; white-space: nowrap; padding-right: 6px; }
+.td-part   { text-align: left; word-break: break-all; }
+.part-line1 { display: block; }
+.part-line2 { display: block; }
 .td-center { text-align: right; padding-right: 6px; }
-.td-wd, .td-dep, .td-bal, .drcr-cell { text-align: right; }
+.td-wd     { text-align: right; }
+.td-dep    { text-align: right; }
+.td-bal    { text-align: right; }
+.drcr-cell { text-align: right; vertical-align: top; padding-right: 6px; }
 
-.bf-row td { background: #fff; padding: 3px 5px; }
-
-.fed-footer {
-    width: calc(100% - 30px);
-    position: absolute;
-    bottom: 8mm;
-    left: 15px;
-    padding: 10px 0 5px 0;
-    border-top: 1.2pt solid #000;
-    display: flex; flex-direction: column; align-items: center;
-    color: #000; font-family: 'Times New Roman', Times, serif;
+/* Opening balance row */
+.bf-row td {
     background: #fff;
+    padding: 3px 5px;  /* Matched normal row padding exactly so amounts align perfectly */
+    font-weight: normal;
 }
-.fed-footer-text { text-align: center; width: 80%; }
-.ff-l1, .ff-l2 { font-size: 7.2pt; }
+.bf-label { font-weight: normal; }
+
+/* ── FOOTER ── */
+.fed-footer {
+    margin-top: auto;
+    margin-left: 15px;
+    margin-right: 15px;
+    padding: 18px 0px 40px 0px; 
+    border-top: 1.2pt solid #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #000;
+    position: relative;
+    font-family: 'Times New Roman', Times, serif;
+}
+.fed-footer-text {
+    text-align: center;
+    width: 80%;
+}
+.ff-l1 {
+    font-size: 7.2pt;
+    font-weight: normal;
+}
+.ff-l2 {
+    font-size: 7.2pt;
+    margin-top: 1px;
+}
 .fed-footer-page {
-    position: absolute; right: 0; top: 18px;
-    font-size: 7.5pt; font-family: 'Times New Roman', Times, serif;
+    position: absolute;
+    right: 0;
+    top: 18px;
+    font-size: 7.5pt;
+    font-weight: normal;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.fed-footer-last {
+    margin-top: auto !important;
 }
 
-.fed-last-page-extras { margin: 30px 15px 0 15px; font-family: 'Times New Roman', Times, serif; }
-.abbr-title { font-size: 11pt; margin-bottom: 12px; }
-.abbr-grid { display: grid; grid-template-columns: auto auto; gap: 12px 140px; font-size: 8pt; margin-left: 15px; }
-.abbr-item { display: flex; }
-.abbr-key { width: 160px; }
-.abbr-sep { width: 12px; }
-.fed-disclaimer { font-size: 6.2pt; line-height: 1.2; text-align: justify; margin-top: 20px; margin-bottom: 25px; }
-.fed-end-stmt { text-align: center; font-size: 6pt; margin-bottom: 20px; }
+/* ── LAST PAGE EXTRAS ── */
+.fed-last-page-extras {
+    margin: 30px 15px 0 15px;
+    font-family: 'Times New Roman', Times, serif;
+    color: #000;
+}
+.fed-abbr-section {
+    margin-bottom: 25px;
+}
+.abbr-title {
+    font-size: 11pt;
+    margin-bottom: 12px;
+}
+.abbr-grid {
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: start;
+    gap: 12px 140px;
+    font-size: 8pt;
+    margin-left: 15px; /* Aligned with title */
+}
+.abbr-item {
+    display: flex;
+    align-items: flex-start;
+}
+.abbr-key { width: 160px; flex-shrink: 0; }
+.abbr-sep { width: 12px; flex-shrink: 0; }
+.abbr-val { flex-grow: 1; }
 
+.grand-total-row td {
+    border: 1px solid #333;
+    padding: 4px 5px;
+}
+
+.fed-disclaimer {
+    font-size: 6.2pt;
+    line-height: 1.2;
+    text-align: justify;
+    margin-bottom: 25px;
+}
+.fed-end-stmt {
+    text-align: center;
+    font-size: 6pt;
+    font-weight: normal;
+    margin-bottom: 20px;
+}
+
+/* PRINT */
 @page { size: A4 portrait; margin: 0; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style>
@@ -522,3 +697,5 @@ ${finalPagesHtml}
 }
 
 module.exports = { buildFederalHTML };
+
+

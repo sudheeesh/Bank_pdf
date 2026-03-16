@@ -43,7 +43,7 @@ const DEBIT_DESCS = [
     () => `WDL TFR\nUPI/DR/${generateUpiRef()}/${randName(DR_NAMES)}`,
     () => `WDL TFR\nUPI/DR/${generateUpiRef()}/${randName(DR_NAMES)}`,
     () => `WDL TFR\nUPI/DR/${generateUpiRef()}/${randName(DR_NAMES)}`,
-    () => `DIRECT DR\n004381${Math.floor(1000000 + Math.random() * 9000000)} OF Ms. ${randName(DR_NAMES)}`,
+    () => `WDL TFR\nUPI/DR/${generateUpiRef()}/${randName(DR_NAMES)}`,
     () => `DEBIT\nACHDr YESB00707000${Math.floor(10000 + Math.random() * 90000)}`,
     () => `WDL TFR\nNEFT*HDFC0000001*HDFCH00${Math.floor(1 + Math.random() * 8)}`,
 ];
