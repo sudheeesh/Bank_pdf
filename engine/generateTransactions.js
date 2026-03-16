@@ -184,7 +184,8 @@ function generateTransactions(opts) {
     const maxDrUser = opts.maxTxnDebit ? Number(opts.maxTxnDebit) : 2990;
     const maxCrUser = opts.maxTxnCredit ? Number(opts.maxTxnCredit) : 2990;
 
-    const maxAllowedTxns = 220; // Allow room for ~200+
+    const targetPages = Number(opts.targetPages) || 8;
+    const maxAllowedTxns = Math.max(220, (targetPages - 1) * 28 + 15 + 20); 
     const txnsPerMonthLimit = Math.max(10, Math.floor(maxAllowedTxns / totalMonths));
 
     let transactions = [];
@@ -214,8 +215,9 @@ function generateTransactions(opts) {
         const provSals = opts.monthlySalaries || [];
         const salary = Number(provSals[mi]) || (Number(opts.monthlySalary) || 0);
 
-        // Target 200 total transactions (e.g., 40/month for 5 months)
-        const monthlyGoal = Math.ceil(200 / totalMonths);
+        // Target transactions based on targetPages
+        const totalGoal = (targetPages - 1) * 28 + 15;
+        const monthlyGoal = Math.ceil(totalGoal / totalMonths);
         const TARGET_DR = Math.max(1, Math.floor(monthlyGoal * 0.60));
         const TARGET_CR = Math.max(1, Math.floor(monthlyGoal * 0.40));
 

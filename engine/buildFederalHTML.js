@@ -65,7 +65,7 @@ function buildFederalHTML(opts) {
     // Federal: page 1 has room for fewer rows (big header + info box)
     // Subsequent pages: more rows
     const ROW_FIRST = 15; // Set to 15 as requested by user
-    const ROW_OTHERS = 31; // Increased to 31 as requested by user
+    const ROW_OTHERS = 28; // Reduced from 31 to make room for last-page extras and footer
 
     const totalTx = transactions.length;
     const pages = [];
@@ -408,7 +408,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
     display: flex;
     flex-direction: column;
     page-break-after: always;
-    overflow: hidden;
+    /* Removed overflow: hidden to prevent footer/disclaimer truncation */
 }
 .page:last-child { page-break-after: avoid; }
 
@@ -653,16 +653,17 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
 }
 .abbr-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px 80px;
+    grid-template-columns: auto auto;
+    justify-content: start;
+    gap: 8px 120px;
     font-size: 8pt;
 }
 .abbr-item {
     display: flex;
     align-items: flex-start;
 }
-.abbr-key { width: 110px; flex-shrink: 0; }
-.abbr-sep { width: 25px; flex-shrink: 0; }
+.abbr-key { width: 55px; flex-shrink: 0; }
+.abbr-sep { width: 12px; flex-shrink: 0; }
 .abbr-val { flex-grow: 1; }
 
 .grand-total-row td {
