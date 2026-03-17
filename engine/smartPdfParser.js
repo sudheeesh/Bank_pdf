@@ -19,13 +19,20 @@ function decode(raw) {
 
 function isAmount(str) {
     // Indian format: 1,23,456.78  |  plain 12345  |  negative wrapped in ()
+    // Stricter: ignore very long digit strings without decimals (likely Ref No)
     const s = str.trim().replace(/\s/g, "");
-    return /^\(?\d[\d,]*(\.\d{1,2})?\)?$/.test(s);
+    if (/^\d{10,}$/.test(s)) return false; 
+    return /^\(?\d[\d,]*(\.\d{1,2})?\)?\s*(Cr|Dr|CR|DR)?$/.test(s);
 }
 
 function parseAmount(str) {
-    const s = String(str || "").replace(/,/g, "").replace(/[()]/g, "").trim();
-    return parseFloat(s) || 0;
+    // Remove commas, parentheses, and Cr/Dr suffixes
+    const s = String(str || "").replace(/,/g, "").replace(/[()]/g, "").replace(/[a-zA-Z]/g, "").trim();
+    const val = parseFloat(s) || 0;
+    // Protection against merged columns (e.g. RefNo concatenated with Amount)
+    // If balance is > 100 Crore, it's likely a parsing artifact unless it's a huge corporate account.
+    // We'll keep it for now but be aware.
+    return val;
 }
 
 function formatAmount(num) {
@@ -94,15 +101,15 @@ function groupIntoRows(texts, yTolerance = 1) {
 function detectColumns(rows) {
     // Keywords for each column type (ORDER MATTERS — more specific first)
     const patterns = {
-        date: /\b(txn[\s-]*date|value[\s-]*date|tran[\s-]*date|date|date\s+of\s+statement)\b/i,
+        date: /\b(txn[\s-]*date|value[\s-]*date|tran[\s-]*date|date|date\s+of\s+statement|post\s+date)\b/i,
         desc: /\b(description|narration|particulars|remarks|details|narrative)\b/i,
-        debit: /\b(debit|dr\.?|withdrawals?|dr[\s-]*amt|amount[\s-]*dr|withdrawal\s*\(dr\))\b/i,
+        debit: /\b(debit|dr\.?|withdrawals?|withdraws?|withdrawls?|dr[\s-]*amt|amount[\s-]*dr|withdrawal\s*\(dr\))\b/i,
         credit: /\b(credit|cr\.?|deposits?|cr[\s-]*amt|amount[\s-]*cr|deposit\s*\(cr\))\b/i,
         balance: /\b(balance|bal\.?|running[\s-]*bal|closing[\s-]*bal|balance\s*\(inr\))\b/i,
-        chq: /\b(chq|cheque|ref\.?|ref[\s-]*no|transaction[\s-]*id|tran[\s-]*id|cheque\s*details)\b/i,
+        chq: /\b(chq|cheque|ref\.?|ref[\s-]*no|transaction[\s-]*id|tran[\s-]*id|cheque\s*details|ref\/chq\.no|cheque\s+no\/reference)\b/i,
     };
-
-    let columns = { date: null, description: null, debit: null, credit: null, balance: null };
+    
+    let columns = { date: null, description: null, debit: null, credit: null, balance: null, chq: null };
     let headerRow = null;
 
     // ---- Pass 1: look for a single row or two adjacent rows containing debit + balance ----
@@ -125,10 +132,11 @@ function detectColumns(rows) {
                 allHeaderCells.forEach(cell => {
                     const txt = cell.text;
                     if (!columns.date && patterns.date.test(txt)) columns.date = { x: cell.rawX, label: txt };
-                    if (!columns.desc && patterns.desc.test(txt)) columns.description = { x: cell.rawX, label: txt };
+                    if (!columns.description && patterns.desc.test(txt)) columns.description = { x: cell.rawX, label: txt };
                     if (!columns.debit && patterns.debit.test(txt)) columns.debit = { x: cell.rawX, label: txt };
                     if (!columns.credit && patterns.credit.test(txt)) columns.credit = { x: cell.rawX, label: txt };
                     if (!columns.balance && patterns.balance.test(txt)) columns.balance = { x: cell.rawX, label: txt };
+                    if (!columns.chq && patterns.chq.test(txt)) columns.chq = { x: cell.rawX, label: txt };
                 });
                 if (columns.debit && columns.balance) break;
             }
@@ -192,8 +200,16 @@ function parseTransactions(rows, columns, pageIndex) {
         const cells = row.cells;
         if (!cells.length) continue;
 
-        const debitCell = cells.find(c => Math.abs(c.rawX - columns.debit.x) <= xTol && isAmount(c.text));
-        const balanceCell = cells.find(c => Math.abs(c.rawX - columns.balance.x) <= xTol && isAmount(c.text));
+        const chqX = columns.chq ? columns.chq.x : -999;
+
+        const debitCell = cells.find(c => {
+            if (Math.abs(c.rawX - chqX) < 2) return false;
+            return Math.abs(c.rawX - columns.debit.x) <= xTol && isAmount(c.text);
+        });
+        const balanceCell = cells.find(c => {
+            if (Math.abs(c.rawX - chqX) < 2) return false;
+            return Math.abs(c.rawX - columns.balance.x) <= xTol && isAmount(c.text);
+        });
 
         // Need a balance cell to be a transaction
         if (!balanceCell) continue;
@@ -201,7 +217,10 @@ function parseTransactions(rows, columns, pageIndex) {
         // Credit cell (if column known)
         let creditCell = null;
         if (columns.credit) {
-            creditCell = cells.find(c => Math.abs(c.rawX - columns.credit.x) <= xTol && isAmount(c.text));
+            creditCell = cells.find(c => {
+                if (Math.abs(c.rawX - chqX) < 2) return false;
+                return Math.abs(c.rawX - columns.credit.x) <= xTol && isAmount(c.text);
+            });
         }
 
         // ---- Infer credit vs debit from Dr/Cr suffix cells ----
@@ -277,6 +296,11 @@ function parseTransactions(rows, columns, pageIndex) {
             balance: parseAmount(balanceCell.text),
             date: dateCell ? dateCell.text : "",
         };
+
+        if (columns.chq) {
+            const chqCell = cells.find(c => Math.abs(c.rawX - columns.chq.x) <= xTol);
+            if (chqCell) tx.refNo = chqCell.text;
+        }
 
         transactions.push(tx);
     }

@@ -6,62 +6,69 @@
 
 const BANK_SIGNATURES = [
     {
+        key: 'canara',
+        displayName: 'Canara Bank',
+        patterns: [
+            /\bCNRB\d{7}\b/i,          // Specific IFSC prefix
+            /canarabank\.com/i,
+            /canarabank\.in/i,
+            /CANARA\s+BANK/i,
+        ]
+    },
+    {
         key: 'federal',
         displayName: 'Federal Bank',
         patterns: [
-            /federal\s*bank/i,
-            /\bFDRL\d{7}\b/i,          // Federal Bank IFSC prefix FDRL (e.g. FDRL0001084)
-            /\bFEDB\d{7}\b/i,          // Legacy alternate prefix
+            /\bFDRL\d{7}\b/i,          // Federal Bank IFSC prefix FDRL
+            /\bFEDB\d{7}\b/i,
             /federalbank\.co\.in/i,
-            /THE\s+FEDERAL\s+BANK/i,
             /FDRLINBBIBD/i,            // Federal Bank SWIFT code
-            /contact@federalbank/i,
+            /THE\s+FEDERAL\s+BANK/i,
         ]
     },
     {
         key: 'sbi',
         displayName: 'State Bank of India',
         patterns: [
+            /\bSBIN[0A-Z]\d{6}\b/i,    // Specific SBI IFSC signature
             /state\s+bank\s+of\s+india/i,
-            /\bSBIN\d{7}\b/i,           // SBI IFSC prefix
             /sbi\.co\.in/i,
-            /\bSBIN0\d{6}\b/i,
         ]
     },
     {
         key: 'hdfc',
         displayName: 'HDFC Bank',
         patterns: [
-            /hdfc\s*bank/i,
-            /\bHDFC\d{7}\b/i,
+            /\bHDFC\d{7}\b/i,          // Specific HDFC IFSC signature
             /hdfcbank\.com/i,
+            /^HDFC\s*BANK/im,          // Must be at start of a line to avoid UPI desc matches
         ]
     },
     {
         key: 'icici',
         displayName: 'ICICI Bank',
         patterns: [
-            /icici\s*bank/i,
             /\bICIC\d{7}\b/i,
             /icicibank\.com/i,
+            /^ICICI\s*BANK/im,
         ]
     },
     {
         key: 'axis',
         displayName: 'Axis Bank',
         patterns: [
-            /axis\s*bank/i,
             /\bUTIB\d{7}\b/i,
             /axisbank\.com/i,
+            /^AXIS\s*BANK/im,
         ]
     },
     {
         key: 'kotak',
         displayName: 'Kotak Bank',
         patterns: [
-            /kotak\s*(mahindra)?\s*bank/i,
             /\bKKBK\d{7}\b/i,
             /kotak\.com/i,
+            /kotak\s*(mahindra)?\s*bank/i,
         ]
     },
 ];

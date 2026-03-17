@@ -73,12 +73,13 @@ function extractAccountInfo(rawText) {
     const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
 
     // 1. Bank Name — detect all supported banks
-    if (/STATE\s+BANK\s+OF\s+INDIA/i.test(text))           info.bankName = "STATE BANK OF INDIA";
+    if (/CANARA\s+BANK|canarabank\.com/i.test(text))           info.bankName = "Canara Bank";
+    else if (/STATE\s+BANK\s+OF\s+INDIA/i.test(text))          info.bankName = "STATE BANK OF INDIA";
     else if (/FEDERAL\s+BANK|federalbank\.co\.in/i.test(text)) info.bankName = "Federal Bank";
-    else if (/HDFC\s+BANK|hdfcbank\.com/i.test(text))      info.bankName = "HDFC Bank";
-    else if (/ICICI\s+BANK|icicibank\.com/i.test(text))    info.bankName = "ICICI Bank";
-    else if (/AXIS\s+BANK|axisbank\.com/i.test(text))      info.bankName = "Axis Bank";
-    else if (/KOTAK\s+(MAHINDRA\s+)?BANK|kotak\.com/i.test(text)) info.bankName = "Kotak Bank";
+    else if (/HDFC\s+BANK|hdfcbank\.com/i.test(text.substring(0, 2000))) info.bankName = "HDFC Bank";
+    else if (/ICICI\s+BANK|icicibank\.com/i.test(text.substring(0, 2000)))   info.bankName = "ICICI Bank";
+    else if (/AXIS\s+BANK|axisbank\.com/i.test(text.substring(0, 2000)))     info.bankName = "Axis Bank";
+    else if (/KOTAK\s+(MAHINDRA\s+)?BANK|kotak\.com/i.test(text.substring(0, 2000))) info.bankName = "Kotak Bank";
     else info.bankName = lines[0] || "";
 
     // 2. Specialized Key-Value Extraction for SBI
@@ -100,7 +101,6 @@ function extractAccountInfo(rawText) {
         { key: "accountOpenDate", labels: ["Account Open Date", "Account Opening Date"] },
         { key: "period", labels: ["Statement From", "Period"] }
     ];
-
     fields.forEach(f => {
         for (const label of f.labels) {
             // Use word boundary for generic "Email" to avoid catching "Branch Email"
@@ -123,6 +123,117 @@ function extractAccountInfo(rawText) {
             }
         }
     });
+
+    // 2b. Canara Bank Specialized Extraction (Moved Up)
+    if (info.bankName === "Canara Bank" || (info.ifsc && info.ifsc.startsWith("CNRB"))) {
+        const canaraFields = [
+            { key: "accountNumber", labels: ["Account No"] },
+            { key: "cif", labels: ["Customer ID"] },
+            { key: "accountName", labels: ["Customer Name"] },
+            { key: "ifsc", labels: ["IFSC"] },
+            { key: "micr", labels: ["MICR"] },
+            { key: "product", labels: ["Product Name"] },
+            { key: "email", labels: ["Email Id"] },
+            { key: "mobileNumber", labels: ["Contact Number"] },
+            { key: "bankTollFree", labels: ["Bank Toll Free Number"] },
+            { key: "whatsappNum", labels: ["WhatsApp Banking Num"] },
+            { key: "nomineeRef", labels: ["Nominee Reference num"] },
+            { key: "nominee", labels: ["Nominee Name"] },
+            { key: "accountTitle", labels: ["Account Title"] },
+            { key: "ckyc", labels: ["CKYC Identifier"] },
+            { key: "vpaId", labels: ["VPA Id"] },
+            { key: "branch", labels: ["Account Branch"] },
+            { key: "swiftCode", labels: ["Swift code"] },
+            { key: "nameCurrency", labels: ["Name Currency"] },
+            { key: "jointHolders", labels: ["Joint Holder's/Authorised"] },
+            { key: "personsName", labels: ["Person's Name"] }
+        ];
+
+        canaraFields.forEach(f => {
+            for (const label of f.labels) {
+                const regex = new RegExp(label.replace(/\s+/g, "\\s*") + "\\s*[:\\-]?\\s*(.*)", "i");
+                const match = text.match(regex);
+                if (match) {
+                    let val = match[1].split("\n")[0].trim();
+                    // Basic cleanup: if another field starts on same line, cut it
+                    const nextFieldIdx = val.search(/Account|Customer|IFSC|MICR|Email|Contact|Bank|WhatsApp|Nominee|VPA|Joint|Person|CKYC|Period|Name/i);
+                    if (nextFieldIdx !== -1 && nextFieldIdx > 5) val = val.substring(0, nextFieldIdx).trim();
+                    // Specifically handle "Product Name" to avoid it matching SBI's "Product" and leaving "Name:"
+                    if (label === "Product Name") val = val.replace(/^Name\s*[:\-]?\s*/i, "");
+                    if (val && !info[f.key]) info[f.key] = val;
+                }
+            }
+        });
+
+        const brIdx = lines.findIndex(l => l.includes("Branch Address"));
+        if (brIdx !== -1) {
+            let brAddr = lines[brIdx].split(/Branch Address\s*:/i)[1] || "";
+            for (let j = brIdx + 1; j < brIdx + 5; j++) {
+                if (!lines[j] || lines[j].includes(":") || /Email|Contact|Bank|WhatsApp|Account|Product/i.test(lines[j])) break;
+                brAddr += "\\n" + lines[j].trim();
+            }
+            info.branchAddress = brAddr.trim();
+        }
+
+        const addrIdx = lines.findIndex(l => l.includes("Address") && !l.includes("Branch") && !l.includes("Updated"));
+        if (addrIdx !== -1) {
+            let custAddr = lines[addrIdx].split(/Address\s*:/i)[1] || "";
+            for (let j = addrIdx + 1; j < addrIdx + 8; j++) {
+                if (!lines[j] || lines[j].includes(":") || /VPA|Nominee|Account|Joint|Person|CKYC/i.test(lines[j])) break;
+                custAddr += "\\n" + lines[j].trim();
+            }
+            info.address = custAddr.trim();
+        }
+
+        const periodIdx = lines.findIndex(l => l.includes("Period") && l.includes("To"));
+        if (periodIdx !== -1) {
+            const m = lines[periodIdx].match(/Period\s*:\s*(.*)/i);
+            if (m) info.period = m[1].trim();
+        }
+    }
+
+    // 2c. Federal Bank Specialized Extraction (Moved Up)
+    if (info.bankName === "Federal Bank") {
+        const federalLabels = [
+            "Branch Name", "Branch sol ID", "Account Number", "Customer ID", 
+            "Account Open Date", "Account Status", "Mode of Operation", 
+            "Joint Holders", "Nomination", "Currency", "Date of Issue",
+            "Communication Address", "Address Last Updated On", "Regd. Mobile Number",
+            "Mobile Number", "Mobile No", "Contact Number", "Phone Number",
+            "Email ID", "Email", "Type of Account", "Scheme", "IFSC", "MICR Code",
+            "SWIFT Code", "Effective Available Balance", "Branch"
+        ];
+        
+        const cleanupValue = (val) => {
+            if (!val) return "";
+            let cleaned = val.split("\n")[0].trim();
+            for (const label of federalLabels) {
+                const regex = new RegExp(label.replace(/\s+/g, "\\s*"), "i");
+                const match = cleaned.match(regex);
+                if (match && match.index > 0) {
+                    cleaned = cleaned.substring(0, match.index).trim();
+                }
+            }
+            return cleaned.replace(/^[:\-]\s*/, "").replace(/[:\-]$/, "").trim();
+        };
+
+        for (let i = 0; i < Math.min(lines.length, 35); i++) {
+            const line = lines[i];
+            if (line.includes("Name") && line.includes(":")) {
+                const match = line.match(/(?:^|\s)Name\s*:\s*(.*)/i);
+                if (match && match[1]) {
+                    const val = cleanupValue(match[1]);
+                    if (!line.includes("Branch Name")) {
+                        if (val && val.length > 2 && !info.accountName) info.accountName = val;
+                    }
+                }
+            }
+            if (line.includes("Account Number") && line.includes(":")) {
+                const parts = line.split(/Account Number\s*:/i);
+                if (parts[1] && !info.accountNumber) info.accountNumber = cleanupValue(parts[1]);
+            }
+        }
+    }
 
     // Special case for IFSC — match any known bank IFSC prefix
     if (!info.ifsc) {
@@ -153,9 +264,9 @@ function extractAccountInfo(rawText) {
         let currentIdx = statementHeaderIdx + 1;
         while (currentIdx < lines.length && currentIdx < statementHeaderIdx + 10) {
             const line = lines[currentIdx];
-            if (line && !/STATEMENT OF ACCOUNT|CIF|Account|Email|Pin Code|Date|Time|Cleared|Branch|IFSC/i.test(line)) {
+            if (line && !/STATEMENT OF ACCOUNT|CIF|Account|Email|Pin Code|Date|Time|Cleared|Branch|IFSC|CANARA BANK|PH \d+|MICR|Nominee|VPA/i.test(line)) {
                 // This is likely the name
-                info.accountName = line;
+                if (!info.accountName) info.accountName = line;
                 break;
             }
             currentIdx++;
@@ -324,7 +435,8 @@ function extractAccountInfo(rawText) {
             info.address = addrLines.join("\\n");
         }
     }
-
+    
+    // Generic extraction continues...
     return info;
 }
 /* ====================================================
@@ -355,10 +467,11 @@ router.post("/api/upload", upload.single("pdf"), async (req, res) => {
             // Merge with text-based fallback to ensure maximum field coverage
             const fbInfo = extractAccountInfo(fullRawText);
             const isFederal = /federal\s*bank/i.test(fullRawText);
+            const isCanara = /canara\s*bank/i.test(fullRawText);
             
             Object.keys(fbInfo).forEach(k => {
-                // If it's Federal, prioritize the text-based clean values for key fields
-                if (isFederal && fbInfo[k]) {
+                // If it's Federal or Canara, prioritize the text-based clean values for key fields
+                if ((isFederal || isCanara) && fbInfo[k]) {
                     accountInfo[k] = fbInfo[k];
                 } else if (!accountInfo[k] && fbInfo[k]) {
                     accountInfo[k] = fbInfo[k];
