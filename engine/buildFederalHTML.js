@@ -131,7 +131,8 @@ function buildFederalHTML(opts) {
         // ── DARK BLUE HEADER BAR (First page only) ───────────────────────────
         if (isFirst) {
             html += `
-            <div class="fed-header-outer" style="position: relative;">
+            <div class="fed-header-outer" style="position: relative; overflow: visible;">
+            <div class="fed-header-right-logo"></div>
             <div class="fed-header-bar">
                 <div class="fed-header-left">
                     <div class="fed-website">www.federalbank.co.in</div>
@@ -146,9 +147,6 @@ function buildFederalHTML(opts) {
                         </div>
                     </div>
                     <div class="fed-email-hdr">contact@federalbank.co.in</div>
-                </div>
-                <div class="fed-header-right-logo">
-                    <img src="${logoSrc}" class="fed-logo-img" alt="Federal Bank"/>
                 </div>
             </div>
             <div class="fed-gold-bar"></div>
@@ -204,8 +202,8 @@ function buildFederalHTML(opts) {
                 <col class="th-bal">
                 <col class="th-drcr">
             </colgroup>
-            ${isFirst ? `<thead>
-                <tr>
+            <tbody>
+                <tr class="fed-th-row">
                     <th class="th-date">Date</th>
                     <th class="th-valdate">Value Date</th>
                     <th class="th-part">Particulars</th>
@@ -216,9 +214,7 @@ function buildFederalHTML(opts) {
                     <th class="th-dep">Deposits</th>
                     <th class="th-bal">Balance</th>
                     <th class="th-drcr">DR<br>/CR</th>
-                </tr>
-            </thead>` : ''}
-            <tbody>`;
+                </tr>`;
 
         // Opening Balance row (first page only)
         if (isFirst) {
@@ -371,12 +367,12 @@ function buildFederalHTML(opts) {
 <meta charset="UTF-8"/>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; background: #fff; }
+body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #000; background: #fff; }
 
 .page {
     width: 210mm;
     min-height: 297mm;
-    padding: 0;
+    padding: 15mm 5mm;
     display: flex;
     flex-direction: column;
     page-break-after: always;
@@ -389,7 +385,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
     padding-top: 12px !important;
 }
 
-.fed-header-outer { margin: 12px 15px 0 15px; }
+.fed-header-outer { margin: 0; }
 .fed-header-bar {
     width: 100%;
     background: #004c97;
@@ -416,11 +412,15 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
 
 .fed-header-right-logo {
     position: absolute;
-    right: -10px; top: -50px; 
-    display: flex; align-items: center; z-index: 10;
-}
-.fed-logo-img {
-    height: 220px; width: auto; object-fit: contain; display: block; margin-bottom: 10px;
+    top: 5mm;
+    right: 5mm;
+    width: 260px;
+    height: 65px;
+    background-image: url('${logoSrc}');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: top right;
+    z-index: 100;
 }
 .fed-gold-bar { height: 9px; background: #f8a818; width: 100%; }
 
@@ -436,7 +436,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
 }
 .fed-info-group:first-child { width: 55%; display: flex; }
 .fed-info-group:last-child { width: 45%; display: flex; }
-.fi-lbl { width: 180px; color: #111; white-space: nowrap; flex-shrink: 0; }
+.fi-lbl { width: 180px; color: #000; white-space: nowrap; flex-shrink: 0; }
 .fi-sep { width: 15px; color: #111; flex-shrink: 0; }
 .fi-val { color: #000; flex-grow: 1; }
 
@@ -452,7 +452,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #111; b
     width: calc(100% - 30px); margin: 0 15px; border-collapse: collapse;
     font-family: 'Times New Roman', Times, serif;
 }
-.fed-tx-table thead tr { background: #98C6DA; }
+.fed-tx-table .fed-th-row { background: #98C6DA; }
 .fed-tx-table th {
     border: 1px solid #333; padding: 5px 4px;
     font-size: 7pt; font-weight: 900; text-align: center;

@@ -252,9 +252,10 @@ function parseTransactions(rows, columns, pageIndex) {
 
         // Description cells
         const descCells = cells.filter(c => {
-            if (columns.date && c.rawX <= columns.date.x + 0.5) return false;
+            if (columns.date && c.rawX <= columns.date.x + 2) return false;
             if (c.rawX >= columns.debit.x - xTol) return false;
             if (isAmount(c.text)) return false;
+            if (datePattern.test(c.text.trim()) && c.text.length < 15) return false;
             return true;
         });
 
@@ -389,7 +390,7 @@ function extractAccountInfoFromParsed(parsed) {
     for (const row of rows) {
         const txt = row.cells.map(c => c.text).join(" ");
         if (labels.header.test(txt)) headerY = row.y;
-        if (headerY > 0 && /Post\s*Date|Value\s*Date|Date\s*Description/i.test(txt)) {
+        if ((headerY > 0 || row.y > 10) && /Post\s*Date|Value\s*Date|Date\s*Description|DATE\s*PARTICULARS|PARTICULARS\s*CHQ/i.test(txt)) {
             tableStartY = row.y;
             break;
         }
@@ -404,7 +405,9 @@ function extractAccountInfoFromParsed(parsed) {
         const rowText = cells.map(c => c.text).join(" ");
 
         // --- ZONE 1: CUSTOMER INFO (Left Side) ---
-        if (row.y > headerY && row.y < tableStartY) {
+        // For SBI, info is between headerY and tableStartY. For SIB, info is usually ABOVE headerY.
+        // We capture any left-aligned text above tableStartY that isn't part of the right-side header.
+        if (row.y < tableStartY) {
             const leftCells = cells.filter(c => c.rawX < 18);
             const leftText = leftCells.map(c => c.text).join(" ").trim();
 

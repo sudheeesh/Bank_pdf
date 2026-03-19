@@ -71,6 +71,15 @@ const BANK_SIGNATURES = [
             /kotak\s*(mahindra)?\s*bank/i,
         ]
     },
+    {
+        key: 'southindian',
+        displayName: 'South Indian Bank',
+        patterns: [
+            /\bSIBL\d{7}\b/i,          // Specific South Indian Bank IFSC prefix
+            /southindianbank\.com/i,
+            /SOUTH\s+INDIAN\s+BANK/i,
+        ]
+    },
 ];
 
 /**

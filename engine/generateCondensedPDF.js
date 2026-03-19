@@ -16,12 +16,14 @@ const path = require("path");
 const { buildSbiHTML } = require("./buildSbiHTML");
 const { buildFederalHTML } = require("./buildFederalHTML");
 const { buildCanaraHTML } = require("./buildCanaraHTML");
+const { buildSouthIndianHTML } = require("./buildSouthIndianHTML");
 const { detectBank } = require("./detectBank");
 
 const LOGO_URLS = {
   sbi:     "https://res.cloudinary.com/dpu9ikeqe/image/upload/v1772833867/sbi_logo_no_bg_r3oysu.png",
   federal: "https://res.cloudinary.com/dpu9ikeqe/image/upload/v1773427506/ChatGPT_Image_Mar_14_2026_12_12_41_AM_eryv8v.png",
-  canara:  "https://upload.wikimedia.org/wikipedia/en/e/e0/Canara_Bank_logo.png",
+  canara:  "https://res.cloudinary.com/dpu9ikeqe/image/upload/v1773733567/ChatGPT_Image_Mar_17_2026_01_14_48_PM_bsqmua.png",
+  southindian: "https://res.cloudinary.com/dpu9ikeqe/image/upload/v1773868417/ChatGPT_Image_Mar_19_2026_02_42_31_AM_tousje.png",
 };
 
 // Keep backward compat
@@ -79,12 +81,12 @@ function buildRow(tx, rowNum) {
   // Get date text
   const date = tx.dateCell ? tx.dateCell.text : (tx.date || "");
 
-  // Get description — join all desc cells, max 50 chars
+  // Get description — join all desc cells (full text, no truncation)
   let desc = "";
   if (tx.descCells && tx.descCells.length) {
-    desc = tx.descCells.map(c => c.text).join(" ").substring(0, 52);
+    desc = tx.descCells.map(c => c.text).join(" ");
   } else {
-    desc = (tx.description || tx.desc || "").substring(0, 52);
+    desc = (tx.description || tx.desc || "");
   }
 
   const rowCls = rowNum % 2 === 0 ? "tr-even" : "tr-odd";
@@ -126,12 +128,15 @@ async function generateCondensedPDF(opts) {
 
   // 1. Try local offline assets first
   try {
-    const filenames = { sbi: 'sbi_logo.png', federal: 'federal_logo.png', canara: 'canara_logo.png' };
-    const localPath = path.join(__dirname, '..', 'assets', 'logos', filenames[bankKey] || filenames.sbi);
-    if (fs.existsSync(localPath)) {
-      console.log('[logo] Loading local logo:', localPath);
-      const buffer = fs.readFileSync(localPath);
-      logoSrc = "data:image/png;base64," + buffer.toString("base64");
+    const filenames = { sbi: 'sbi_logo.png', federal: 'federal_logo.png', canara: 'canara_logo.png', southindian: 'southindian_logo.png' };
+    const localFile = filenames[bankKey];
+    if (localFile) {
+      const localPath = path.join(__dirname, '..', 'assets', 'logos', localFile);
+      if (fs.existsSync(localPath)) {
+        console.log('[logo] Loading local logo:', localPath);
+        const buffer = fs.readFileSync(localPath);
+        logoSrc = "data:image/png;base64," + buffer.toString("base64");
+      }
     }
   } catch (err) {
     console.warn('[logo] Local logo read failed:', err.message);
@@ -159,10 +164,14 @@ async function generateCondensedPDF(opts) {
     html = buildFederalHTML({ ...opts, logoSrc });
   } else if (bankKey === 'canara' || lowerBankName.includes("canara")) {
     html = buildCanaraHTML({ ...opts, logoSrc });
+  } else if (bankKey === 'southindian' || lowerBankName.includes("south indian")) {
+    html = buildSouthIndianHTML({ ...opts, logoSrc });
   } else {
     // Default: SBI (and any unrecognised bank falls back to SBI layout)
     html = buildSbiHTML({ ...opts, logoSrc });
   }
+
+  console.log(`[build-statement] ${opts.transactions.length} transactions -> ${Math.round(html.length / 1024)} KB HTML`);
 
   const browser = await puppeteer.launch({
     headless: "new",

@@ -76,9 +76,9 @@ function buildSbiHTML(opts) {
         <div class="sbi-header">
           <div class="sbi-top">
             <div class="sbi-logo-area">
-               <img src="${logoSrc || 'https://res.cloudinary.com/dpu9ikeqe/image/upload/v1772833867/sbi_logo_no_bg_r3oysu.png'}" style="height:74px; display:block; margin-bottom:0; margin-top:-6px;" alt="SBI Logo"/>
                <div class="sbi-title">STATEMENT OF ACCOUNT</div>
             </div>
+            <div class="sbi-logo-img"></div>
             <div class="sbi-branch-info">
                <div style="font-size: 11.5pt; margin-bottom: 5px;">STATE BANK OF INDIA</div>
                <div style="font-weight: normal;">${escHtml(branch || "")}</div>
@@ -338,6 +338,17 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; color: #000;
   margin-bottom: 4px;
 }
 .sbi-top { display: flex; justify-content: space-between; margin-bottom: 8px; align-items:flex-start; }
+.sbi-logo-img {
+    position: absolute;
+    top: 6mm;
+    right: 8mm;
+    height: 64px; width: 130px;
+    background-image: url('${logoSrc || 'https://res.cloudinary.com/dpu9ikeqe/image/upload/v1772833867/sbi_logo_no_bg_r3oysu.png'}');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: top right;
+    margin: 0;
+}
 .sbi-title { font-size: 13pt; margin-top: -3px; text-decoration: underline; letter-spacing: 0.5px; margin-left:2px;}
 .sbi-branch-info { font-size: 8.5pt; line-height:1.3; width: 365px; text-align:left; padding-left: 95px; box-sizing: border-box; }
 .sbi-middle { display: flex; justify-content: space-between; align-items: stretch; margin-top:5px; }

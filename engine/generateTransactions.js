@@ -39,22 +39,22 @@ const CR_NAMES = [
 function randName(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 const DEBIT_DESCS = [
-    () => `WDL TFR\nUPI/DR/${generateUpiRef()}/${randName(DR_NAMES)}`,
-    () => `WDL TFR\nUPI/DR/${generateUpiRef()}/${randName(DR_NAMES)}`,
-    () => `WDL TFR\nUPI/DR/${generateUpiRef()}/${randName(DR_NAMES)}`,
-    () => `WDL TFR\nUPI/DR/${generateUpiRef()}/${randName(DR_NAMES)}`,
-    () => `WDL TFR\nUPI/DR/${generateUpiRef()}/${randName(DR_NAMES)}`,
-    () => `DEBIT\nACHDr YESB00707000${Math.floor(10000 + Math.random() * 90000)}`,
-    () => `WDL TFR\nNEFT*HDFC0000001*HDFCH00${Math.floor(1 + Math.random() * 8)}`,
+    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(DR_NAMES)}/UPI`,
+    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(DR_NAMES)}/UPI`,
+    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(DR_NAMES)}/UPI`,
+    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(DR_NAMES)}/UPI`,
+    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(DR_NAMES)}/UPI`,
+    () => `DEBIT ACHDr YESB00707000${Math.floor(10000 + Math.random() * 90000)}`,
+    () => `WDL TFR NEFT*HDFC0000001*HDFCH00${Math.floor(1 + Math.random() * 8)}`,
 ];
 const CREDIT_DESCS = [
-    () => `DEP TFR\nUPI/CR/${generateUpiRef()}/${randName(CR_NAMES)}`,
-    () => `DEP TFR\nUPI/CR/${generateUpiRef()}/${randName(CR_NAMES)}`,
-    () => `DEP TFR\nUPI/CR/${generateUpiRef()}/${randName(CR_NAMES)}`,
-    () => `DEP TFR\nUPI/CR/${generateUpiRef()}/${randName(CR_NAMES)}`,
-    () => `DEP TFR\nNEFT*HDFC0000001*HDFCH00${Math.floor(1 + Math.random() * 8)}`,
-    () => `DEP TFR\nUPI/CR/${generateUpiRef()}/${randName(CR_NAMES)}`,
-    () => `CHQ TRFR FROM\n004273866${Math.floor(1000 + Math.random() * 9000)} OF ${randName(CR_NAMES)}`,
+    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(CR_NAMES)}/UPI`,
+    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(CR_NAMES)}/UPI`,
+    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(CR_NAMES)}/UPI`,
+    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(CR_NAMES)}/UPI`,
+    () => `DEP TFR NEFT*HDFC0000001*HDFCH00${Math.floor(1 + Math.random() * 8)}`,
+    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(CR_NAMES)}/UPI`,
+    () => `CHQ TRFR FROM 004273866${Math.floor(1000 + Math.random() * 9000)} OF ${randName(CR_NAMES)}`,
 ];
 
 // Salary-specific descriptions — ONLY used for the big monthly salary credit
