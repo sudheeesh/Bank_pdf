@@ -1,13 +1,39 @@
 {
   "name": "bank_pdf",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Professional Bank Statement PDF Manager",
+  "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:modifier": "node pdf-modifier-server.js",
     "start": "node server.js",
+    "start:desktop": "electron .",
+    "dist": "electron-builder",
     "postinstall": "npx puppeteer browsers install chrome"
+  },
+  "build": {
+    "appId": "com.bankpdf.pro",
+    "productName": "Bank Statement Pro",
+    "directories": {
+      "output": "dist_app"
+    },
+    "win": {
+      "target": "nsis",
+      "sign": null
+    },
+    "extraResources": [
+      "assets/**",
+      "engine/**",
+      "pdf-modifier-ui/**"
+    ],
+    "asar": true,
+    "files": [
+      "**/*",
+      "!dist_app/**/*",
+      "!artifacts/**/*",
+      "!.gemini/**/*",
+      "!screenshots/**/*"
+    ]
   },
   "keywords": [],
   "author": "",
@@ -15,15 +41,19 @@
   "type": "commonjs",
   "dependencies": {
     "express": "^5.2.1",
+    "jszip": "^3.10.1",
     "moment": "^2.30.1",
     "multer": "^2.0.2",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
     "pdf2json": "^4.0.2",
+    "pdfjs-dist": "^4.1.392",
     "pdfkit": "^0.17.2",
     "puppeteer": "^24.37.5",
-    "pdfjs-dist": "^4.1.392",
-    "jszip": "^3.10.1",
     "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "electron": "^41.0.3",
+    "electron-builder": "^26.8.1"
   }
 }

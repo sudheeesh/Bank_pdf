@@ -215,7 +215,7 @@ function buildSouthIndianHTML(opts) {
                 padding: 4px 0;
                 font-size: 8pt;
                 font-weight: normal;
-                margin-top: 10px;
+                margin-top: 2px;
             }
             .page-total-lbl { flex: 1; padding-left: 2px; text-align: left; }
             .page-total-wit { width: 13%; text-align: right; }
@@ -244,14 +244,14 @@ function buildSouthIndianHTML(opts) {
 
             .footer-pages {
                 text-align: center;
-                font-size: 6.5pt;
+                font-size: 6pt;
                 position: absolute;
                 bottom: 15px;
                 width: calc(100% - 40px);
             }
             .footer-contact {
                 text-align: center;
-                font-size: 6.5pt;
+                font-size: 6pt;
                 color: #000;
                 position: absolute;
                 bottom: 5px;

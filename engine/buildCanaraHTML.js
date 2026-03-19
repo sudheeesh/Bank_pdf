@@ -33,7 +33,7 @@ function buildCanaraHTML(opts) {
     const creditCount = transactions.filter(tx => (tx.newCredit !== undefined ? tx.newCredit : (tx.credit || 0)) > 0).length;
 
     const ROWS_FIRST_PAGE = 4;
-    const ROWS_OTHER_PAGES = 11;
+    const ROWS_OTHER_PAGES = 12;
     const pages = [];
     let current = 0;
     while (current < transactions.length) {
@@ -265,7 +265,7 @@ function buildCanaraHTML(opts) {
                 </div>
 
                 <div class="cnr-ombudsman">
-                    <div style="text-align: center; margin-bottom: 5px;">Fort Glacis</div>
+                    <div style="text-align: center; margin-top: 15px;">Fort Glacis</div>
                     Details of Ombudsman : Centralized Receipt and Processing Centre (CRPC)<br>
                     Office of Banking Ombudsman<br>
                     Reserve Bank of India<br>
@@ -279,9 +279,9 @@ function buildCanaraHTML(opts) {
                     COMPUTER OUTPUT DOES NOT REQUIRE SIGNATURE.
                 </div>
                 
-                <div style="text-align: center; margin-top: 15px; margin-bottom: 5px; font-weight: normal; font-size: 8pt; letter-spacing: 0.5px;">
-                    ******END OF STATEMENT******
-                </div>
+            </div>
+            <div style="text-align: center; margin-top: 15px; margin-bottom: 5px; font-weight: normal; font-size: 8pt; letter-spacing: 0.5px;">
+                ******END OF STATEMENT******
             </div>`;
         }
 
@@ -318,7 +318,7 @@ function buildCanaraHTML(opts) {
             /* LOGO */
             .cnr-logo { 
                 position: absolute; 
-                top: 2mm;
+                top: 1mm;
                 right: 5mm;
                 width: 70px;
                 height: 40px; 
@@ -336,7 +336,7 @@ function buildCanaraHTML(opts) {
                 font-size: 7pt;
                 font-weight: bold;
                 letter-spacing: 0.5px;
-                margin: 10px 0 10px 0;
+                margin: 0px 0 10px 0;
                 clear: both;
                 padding-left: 10mm;
                 padding-right: 10mm;
@@ -384,8 +384,8 @@ function buildCanaraHTML(opts) {
                 vertical-align: top;
                 font-size: 9pt;
                 line-height: 1.2;
-                min-height: 68px;
-                height: 68px;
+                min-height: 72px;
+                height: 72px;
                 word-break: break-all;
             }
             .cnr-compact-row td {
@@ -425,9 +425,13 @@ function buildCanaraHTML(opts) {
                 font-size: 7.2pt;
                 vertical-align: top;
             }
-            .cnr-summary-table th { font-weight: bold; min-height: 40px; height: 40px; }
+            .cnr-summary-table th { 
+                background-color: #d9e9f3; 
+                font-weight: bold; 
+                min-height: 40px; 
+                height: 40px; 
+            }
             .cnr-summary-table td { min-height: 50px; height: 50px; }
-            .cnr-summary-table th { font-weight: bold; }
 
             .cnr-footer-notes { 
                 font-size: 8.5pt; 
@@ -439,7 +443,7 @@ function buildCanaraHTML(opts) {
             }
             .cnr-footer-notes p { margin: 0px 0; }
             .cnr-warning-box {
-                margin: 10px 0;
+                margin: 35px 0;
                 text-align: center;
                 font-weight: bold;
                 font-size: 9pt;
