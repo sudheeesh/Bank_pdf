@@ -18,21 +18,28 @@
       "output": "dist_app"
     },
     "win": {
-      "target": "nsis",
-      "sign": null
+      "target": "nsis"
     },
+    "forceCodeSigning": false,
+    "compression": "normal",
     "extraResources": [
       "assets/**",
       "engine/**",
-      "pdf-modifier-ui/**"
+      "pdf-modifier-ui/**",
+      ".cache/**"
     ],
     "asar": true,
     "files": [
       "**/*",
-      "!dist_app/**/*",
-      "!artifacts/**/*",
-      "!.gemini/**/*",
-      "!screenshots/**/*"
+      "!dist_app/**",
+      "!uploads/**",
+      "!input/**",
+      "!output/**",
+      "!tmp/**",
+      "!.cache/**",
+      "!artifacts/**",
+      "!.gemini/**",
+      "!screenshots/**"
     ]
   },
   "keywords": [],

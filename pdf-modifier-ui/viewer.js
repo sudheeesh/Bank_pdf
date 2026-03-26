@@ -1,7 +1,7 @@
 /* PDF Viewer & Editor JavaScript */
 
 // PDF.js Setup
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.1.392/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
 
 // Debug Mode
 const DEBUG_MODE = true; // Set to false to disable console logging
@@ -213,8 +213,6 @@ async function handleFileUpload(e) {
     showToast('Error loading PDF: ' + error.message, 'error');
   }
 }
-
-const DEBUG_MODE = true; // Set to false to disable console logging
 
 async function renderPage(pageNum) {
   if (!state.pdfDoc) {

@@ -76,9 +76,9 @@ function buildSbiHTML(opts) {
         <div class="sbi-header">
           <div class="sbi-top">
             <div class="sbi-logo-area">
+               <div class="sbi-logo-img"></div>
                <div class="sbi-title">STATEMENT OF ACCOUNT</div>
             </div>
-            <div class="sbi-logo-img"></div>
             <div class="sbi-branch-info">
                <div style="font-size: 11.5pt; margin-bottom: 5px;">STATE BANK OF INDIA</div>
                <div style="font-weight: normal;">${escHtml(branch || "")}</div>
@@ -177,24 +177,21 @@ function buildSbiHTML(opts) {
     // If first page, add BROUGHT FORWARD
     if (pi === 0) {
       html += `<tr><td></td><td></td><td style="padding-left: 10px; height:36px; vertical-align: middle;">BROUGHT FORWARD</td><td></td><td></td><td></td><td style="padding: 3px 6px; text-align: right; vertical-align: middle; white-space: nowrap;">${inr(openingBalance)}CR</td></tr>`;
-    }
-
-    // Add rows
+    }    // Add rows
     pageTxs.forEach(tx => {
       const dateStr = tx.dateCell ? tx.dateCell.text : (tx.date || "");
 
-      // Build description: always Line1 = transaction type prefix, Line2 = reference
+      // Build description
       let desc = "";
+      let refNo = tx.refNo || Math.floor(100000000000 + Math.random() * 899999999999).toString();
       {
         let line1 = "", line2 = "";
         if (tx.descCells && tx.descCells.length >= 2) {
-          // Multiple cells: first cell = type, rest = reference
           line1 = tx.descCells[0].text || "";
           line2 = tx.descCells.slice(1).map(c => c.text).join(" ");
         } else {
           const raw = (tx.descCells && tx.descCells.length ? tx.descCells[0].text : null)
             || tx.description || tx.desc || "";
-          // Detect known SBI transaction type prefixes (with or without space before reference)
           const m = raw.match(/^(WDL\s*TFR|DEP\s*TFR|DIRECT\s*DR|CHQ\s*TRFR(?:\s*FROM)?|DEBITACH(?:\s*DR)?|NEFT\s*TFR|RTGS\s*TFR|ATW\s*WDL|IMPS)([\s*]*)([\s\S]*)$/i);
           if (m) {
             line1 = m[1].trim();
@@ -203,20 +200,28 @@ function buildSbiHTML(opts) {
             line1 = raw;
           }
         }
+
+        const debit = tx.newDebit !== undefined ? tx.newDebit : tx.debit;
+        const credit = tx.newCredit !== undefined ? tx.newCredit : tx.credit;
+        const balance = tx.newBalance !== undefined ? tx.newBalance : tx.balance;
+
+        const debStr = debit > 0 ? inr(debit) : "";
+        const credStr = credit > 0 ? inr(credit) : "";
+        const isCr = balance >= 0;
+        const balStr = inr(balance) + (isCr ? "CR" : "DR");
+
+        // FORCE UPI FORMAT if not salary
+        const isSalary = line1.toUpperCase().includes("SALARY") || line2.toUpperCase().includes("SALARY");
+        if (isSalary) {
+          if (!line1.toUpperCase().includes("NEFT")) line1 = "NEFT " + line1;
+        } else {
+          const isDebit = (debit > 0);
+          line1 = isDebit ? "WDL TFR UPI" : "DEP TFR UPI";
+          line2 = refNo + "/TRANSFER/UPI";
+        }
         desc = escHtml(line1) + (line2 ? "<br/>" + escHtml(line2) : "");
-      }
 
-
-      const debit = tx.newDebit !== undefined ? tx.newDebit : tx.debit;
-      const credit = tx.newCredit !== undefined ? tx.newCredit : tx.credit;
-      const balance = tx.newBalance !== undefined ? tx.newBalance : tx.balance;
-
-      const debStr = debit > 0 ? inr(debit) : "";
-      const credStr = credit > 0 ? inr(credit) : "";
-      const isCr = balance >= 0;
-      const balStr = inr(balance) + (isCr ? "CR" : "DR"); // Assuming CR is positive
-
-      html += `
+        html += `
         <tr>
           <td style="height:36px; padding: 3px 6px; text-align: center; white-space: nowrap; vertical-align: middle; overflow:hidden;">${dateStr}</td>
           <td style="height:36px; padding: 3px 6px; text-align: center; white-space: nowrap; vertical-align: middle; overflow:hidden;">${dateStr}</td>
@@ -227,9 +232,9 @@ function buildSbiHTML(opts) {
           <td style="height:36px; padding: 3px 4px; vertical-align: middle; text-align: center; overflow:hidden;">${debStr}</td>
           <td style="height:36px; padding: 3px 4px; vertical-align: middle; text-align: center; overflow:hidden;">${credStr}</td>
           <td style="height:36px; padding: 3px 6px; vertical-align: middle; text-align: right; white-space: nowrap; overflow:hidden;">${balStr}</td>
-        </tr>
-      `;
-    });
+        </tr>`;
+      }
+      });
 
     if (pi === pageCount - 1) {
       html += `<tr><td></td><td></td><td style="padding-left: 10px; vertical-align: middle; height:36px;">CLOSING BALANCE</td><td></td><td></td><td></td><td style="padding: 3px 6px; text-align: right; vertical-align: middle; white-space: nowrap;">${inr(closingBalance)}CR</td></tr>`;
@@ -339,9 +344,6 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; color: #000;
 }
 .sbi-top { display: flex; justify-content: space-between; margin-bottom: 8px; align-items:flex-start; }
 .sbi-logo-img {
-    position: absolute;
-    top: 6mm;
-    right: 8mm;
     height: 64px; width: 130px;
     background-image: url('${logoSrc || 'https://res.cloudinary.com/dpu9ikeqe/image/upload/v1772833867/sbi_logo_no_bg_r3oysu.png'}');
     background-size: contain;

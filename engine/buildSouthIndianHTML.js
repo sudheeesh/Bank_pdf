@@ -94,10 +94,9 @@ function buildSouthIndianHTML(opts) {
     <html>
     <head>
         <style>
-            @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
             html, body {
                 margin: 0; padding: 0;
-                font-family: 'Arial', sans-serif;
+                font-family: Arial, Helvetica, sans-serif;
                 font-size: 8pt;
                 color: #000;
                 background-color: #fff;
@@ -124,7 +123,7 @@ function buildSouthIndianHTML(opts) {
             .sib-logo {
                 width: 420px;
                 height: 120px; 
-                background-image: url('${logoSrc || 'https://res.cloudinary.com/dpu9ikeqe/image/upload/v1773868417/ChatGPT_Image_Mar_19_2026_02_42_31_AM_tousje.png'}');
+                background-image: url('${logoSrc || ''}');
                 background-size: contain;
                 background-repeat: no-repeat;
                 background-position: left bottom;
@@ -378,11 +377,19 @@ function buildSouthIndianHTML(opts) {
             }
 
             let formattedDesc = desc.toUpperCase();
-            if (tx.refNo && tx.refNo.length > 5) {
+            const isSalary = formattedDesc.includes("SALARY");
+            if (isSalary) {
+                if (!formattedDesc.includes("NEFT")) formattedDesc = "NEFT/" + formattedDesc;
+                if (!ref) ref = Math.floor(100000000000 + Math.random() * 899999999999).toString();
+            } else {
                 const banks = ["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"];
-                const bank = banks[Math.abs(tx.refNo.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % banks.length];
-                const namePart = formattedDesc.split('/').pop();
-                formattedDesc = `UPI/${bank}/RRN-${tx.refNo}/${namePart}/UPI`;
+                const upiRef = tx.refNo || Math.floor(100000000000 + Math.random() * 899999999999).toString();
+                const bank = banks[Math.abs(upiRef.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % banks.length];
+                const parts = formattedDesc.split('/');
+                const namePart = (parts.length > 1) ? parts.pop() : "TRANSFER";
+                formattedDesc = `UPI/${bank}/RRN-${upiRef}/${namePart}/UPI`;
+                // Ensure ref is populated for the column
+                ref = upiRef;
             }
 
             const balStr = inr(balance) + "Cr"; // Define balStr
@@ -391,7 +398,7 @@ function buildSouthIndianHTML(opts) {
             <tr>
                 <td class="col-date left-align" style="white-space: nowrap;">${escHtml(dateStr)}</td>
                 <td class="col-part left-align">${escHtml(formattedDesc)}</td>
-                <td class="col-chq">${escHtml(ref)}</td>
+                <td class="col-chq"></td>
                 <td class="col-wit">${debit > 0 ? inr(debit) : ''}</td>
                 <td class="col-dep">${credit > 0 ? inr(credit) : ''}</td>
                 <td class="col-bal">${balStr}</td>

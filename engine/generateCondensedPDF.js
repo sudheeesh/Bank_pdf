@@ -17,6 +17,7 @@ const { buildSbiHTML } = require("./buildSbiHTML");
 const { buildFederalHTML } = require("./buildFederalHTML");
 const { buildCanaraHTML } = require("./buildCanaraHTML");
 const { buildSouthIndianHTML } = require("./buildSouthIndianHTML");
+const { buildHDFCHTML } = require("./buildHDFCHTML");
 const { detectBank } = require("./detectBank");
 
 const LOGO_URLS = {
@@ -24,6 +25,7 @@ const LOGO_URLS = {
   federal: "https://res.cloudinary.com/dpu9ikeqe/image/upload/v1773427506/ChatGPT_Image_Mar_14_2026_12_12_41_AM_eryv8v.png",
   canara:  "https://res.cloudinary.com/dpu9ikeqe/image/upload/v1773733567/ChatGPT_Image_Mar_17_2026_01_14_48_PM_bsqmua.png",
   southindian: "https://res.cloudinary.com/dpu9ikeqe/image/upload/v1773868417/ChatGPT_Image_Mar_19_2026_02_42_31_AM_tousje.png",
+  hdfc: "https://res.cloudinary.com/dpu9ikeqe/image/upload/v1774241257/HDFC-Bank-logo_gmjtse.png",
 };
 
 // Keep backward compat
@@ -128,7 +130,7 @@ async function generateCondensedPDF(opts) {
 
   // 1. Try local offline assets first
   try {
-    const filenames = { sbi: 'sbi_logo.png', federal: 'federal_logo.png', canara: 'canara_logo.png', southindian: 'southindian_logo.png' };
+    const filenames = { sbi: 'sbi_logo.png', federal: 'federal_logo.png', canara: 'canara_logo.png', southindian: 'southindian_logo.png', hdfc: 'hdfc_logo.png' };
     const localFile = filenames[bankKey];
     if (localFile) {
       const localPath = path.join(__dirname, '..', 'assets', 'logos', localFile);
@@ -142,18 +144,9 @@ async function generateCondensedPDF(opts) {
     console.warn('[logo] Local logo read failed:', err.message);
   }
 
-  // 2. Fallback to online fetch if local missing
+  // 2. No online fallback: stay completely offline to prevent hangs on slow WiFi
   if (!logoSrc) {
-    try {
-      console.log('[logo] Fetching logo from online for', bankInfo.displayName, '…');
-      logoSrc = await Promise.race([
-        fetchAsBase64(logoUrl),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('logo fetch timed out after 30s')), 30000))
-      ]);
-      console.log('[logo] Online fetch OK (' + Math.round(logoSrc.length / 1024) + ' KB base64)');
-    } catch (e) {
-      console.warn('[logo] Could not fetch online logo, PDF will render without it:', e.message);
-    }
+    console.warn('[logo] Local logo missing, but online fallback is disabled for offline stability.');
   }
 
   // ── Build HTML using the correct template ─────────────────────────────────
@@ -166,6 +159,8 @@ async function generateCondensedPDF(opts) {
     html = buildCanaraHTML({ ...opts, logoSrc });
   } else if (bankKey === 'southindian' || lowerBankName.includes("south indian")) {
     html = buildSouthIndianHTML({ ...opts, logoSrc });
+  } else if (bankKey === 'hdfc' || lowerBankName.includes("hdfc")) {
+    html = buildHDFCHTML({ ...opts, logoSrc });
   } else {
     // Default: SBI (and any unrecognised bank falls back to SBI layout)
     html = buildSbiHTML({ ...opts, logoSrc });

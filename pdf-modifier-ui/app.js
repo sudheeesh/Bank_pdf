@@ -250,7 +250,12 @@ function autoFillAccountInfo(info) {
     'b-branch-phone': info.branchPhone || '',
     'b-acc-open-date': info.accountOpenDate || '',
     'b-branch-pin': info.branchPinCode || '',
-    'b-branch-address': info.branchAddress || ''
+    'b-branch-address': info.branchAddress || '',
+    'b-nomination': info.nomination || 'Registered',
+    'b-od-limit': info.odLimit || '0.00',
+    'b-branch-city': info.branchCity || '',
+    'b-branch-state': info.branchState || '',
+    'b-joint-holders': info.jointHolders || '',
   };
   for (const [id, val] of Object.entries(map)) {
     const el = document.getElementById(id);
@@ -1051,6 +1056,11 @@ async function buildDownload() {
     branchPinCode: document.getElementById('b-branch-pin')?.value || '',
     branchAddress: document.getElementById('b-branch-address')?.value || '',
     mobileNumber: document.getElementById('b-mobile')?.value || '',
+    nomination: document.getElementById('b-nomination')?.value || '',
+    odLimit: document.getElementById('b-od-limit')?.value || '',
+    branchCity: document.getElementById('b-branch-city')?.value || '',
+    branchState: document.getElementById('b-branch-state')?.value || '',
+    jointHolders: document.getElementById('b-joint-holders')?.value || '',
   };
 
   showLoading(`Generating clean PDF (${maxPages} pages max)… ~10s`);

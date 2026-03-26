@@ -260,7 +260,7 @@
     },
     {
         "date": "16-07-2025",
-        "desc": "11-11-2025 WDL TFR UPI/DR/531512231456/RAJESH",
+        "desc": "11-11-2025 WDL TFR UPI/DR/531512231456/RAJESH KUMAR",
         "debit": 0,
         "credit": 3000,
         "balance": 747971.71
@@ -268,7 +268,9 @@
     {
         "date": "17-07-2025",
         "desc": "16-09-2025 DEP TFR UPI/CR/525984460147/SHANY M",
-        "debit": 100, credit: 0, balance: 747871.71
+        "debit": 100,
+        "credit": 0,
+        "balance": 747871.71
     },
     {
         "date": "17-07-2025",
@@ -454,7 +456,7 @@
     },
     {
         "date": "30-07-2025",
-        "desc": "13-09-2025 DEP TFR UPI/CR/562243260858/VISHNUR",
+        "desc": "13-09-2025 DEP TFR UPI/CR/562243260858/VISHNU R DEVAN`~",
         "debit": 100,
         "credit": 0,
         "balance": 781213.47
@@ -468,7 +470,7 @@
     },
     {
         "date": "31-07-2025",
-        "desc": "16-08-2025 DEP TFR UPI/CR/522882632065/KARUNA",
+        "desc": "16-08-2025 DEP TFR UPI/CR/522882632065/KARUNA MOORTHY",
         "debit": 0,
         "credit": 1500,
         "balance": 782213.47

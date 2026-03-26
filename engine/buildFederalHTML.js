@@ -53,7 +53,7 @@ function buildFederalHTML(opts) {
     const totalWithdrawals = transactions.reduce((sum, tx) => sum + (tx.newDebit !== undefined ? tx.newDebit : (tx.debit || 0)), 0);
     const totalDeposits = transactions.reduce((sum, tx) => sum + (tx.newCredit !== undefined ? tx.newCredit : (tx.credit || 0)), 0);
 
-    const ROW_FIRST = 15;
+    const ROW_FIRST = 14;
     const ROW_OTHERS = 30;
 
     const totalTx = transactions.length;
@@ -259,7 +259,7 @@ function buildFederalHTML(opts) {
                 const company = companyName || 'MODULUSTEC';
                 const shortAccName = accName.split(' ')[1] || accName.split(' ')[0];
                 raw = `NEFT/${ref}/${company}/${shortAccName}/SALARY`;
-            } else if (raw.includes('WDL TFR') || raw.includes('DEP TFR') || raw.includes('ACHDr') || raw.includes('CHQ TRFR')) {
+            } else {
                 const ref = (debit > 0 ? '5182' : '1073') + Math.floor(10000000 + Math.random() * 90000000);
                 const prefix = debit > 0 ? 'UPIOUT' : 'UPI IN';
                 const emailPrefix = debit > 0 ? 'merchant' : 'sender';
@@ -372,7 +372,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #000; b
 .page {
     width: 210mm;
     min-height: 297mm;
-    padding: 15mm 5mm;
+    padding: 5mm 5mm 15mm 5mm;
     display: flex;
     flex-direction: column;
     page-break-after: always;
@@ -392,7 +392,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #000; b
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 10px 10px 10px;
+    padding: 12px 15px 15px 15px;
 }
 .fed-header-left { color: #fff; font-size: 7pt; line-height: 1.25; }
 .fed-website { font-size: 8pt; margin-bottom: 3px; font-weight: 300; }
@@ -412,20 +412,21 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #000; b
 
 .fed-header-right-logo {
     position: absolute;
-    top: 5mm;
-    right: 5mm;
-    width: 260px;
-    height: 65px;
+    bottom: 2px; 
+    right: 60px;
+    transform: translateY(60px) scale(1.2); /* Pushing the logo down by 15px to align with contact info */
+    width: 700px; 
+    height: 180px;
     background-image: url('${logoSrc}');
     background-size: contain;
     background-repeat: no-repeat;
-    background-position: top right;
+    background-position: center right;
     z-index: 100;
 }
 .fed-gold-bar { height: 9px; background: #f8a818; width: 100%; }
 
 .fed-info-box {
-    margin: 4px 15px 0px 15px;
+    margin: 4px 0px 0px 0px;
     border: 0.5pt solid #555; 
     padding: 8px 10px 1px 12px;
 }
@@ -449,7 +450,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #000; b
 }
 
 .fed-tx-table {
-    width: calc(100% - 30px); margin: 0 15px; border-collapse: collapse;
+    width: 100%; margin: 0; border-collapse: collapse;
     font-family: 'Times New Roman', Times, serif;
 }
 .fed-tx-table .fed-th-row { background: #98C6DA; }
@@ -485,10 +486,10 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #000; b
 .bf-row td { background: #fff; padding: 3px 5px; }
 
 .fed-footer {
-    width: calc(100% - 30px);
+    width: calc(100% - 10mm);
     position: absolute;
-    bottom: 8mm;
-    left: 15px;
+    bottom: 5mm;
+    left: 5mm;
     padding: 10px 0 5px 0;
     border-top: 1.2pt solid #000;
     display: flex; flex-direction: column; align-items: center;
@@ -502,9 +503,9 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #000; b
     font-size: 7.5pt; font-family: 'Times New Roman', Times, serif;
 }
 
-.fed-last-page-extras { margin: 30px 15px 0 15px; font-family: 'Times New Roman', Times, serif; }
+.fed-last-page-extras { margin: 30px 0 0 0; font-family: 'Times New Roman', Times, serif; }
 .abbr-title { font-size: 11pt; margin-bottom: 12px; }
-.abbr-grid { display: grid; grid-template-columns: auto auto; gap: 12px 140px; font-size: 8pt; margin-left: 15px; }
+.abbr-grid { display: grid; grid-template-columns: auto auto; gap: 12px 140px; font-size: 8pt; margin-left: 0px; }
 .abbr-item { display: flex; }
 .abbr-key { width: 160px; }
 .abbr-sep { width: 12px; }

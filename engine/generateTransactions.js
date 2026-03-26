@@ -40,21 +40,13 @@ function randName(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 const DEBIT_DESCS = [
     () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(DR_NAMES)}/UPI`,
-    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(DR_NAMES)}/UPI`,
-    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(DR_NAMES)}/UPI`,
-    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(DR_NAMES)}/UPI`,
-    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(DR_NAMES)}/UPI`,
-    () => `DEBIT ACHDr YESB00707000${Math.floor(10000 + Math.random() * 90000)}`,
-    () => `WDL TFR NEFT*HDFC0000001*HDFCH00${Math.floor(1 + Math.random() * 8)}`,
+    () => `UPI/${randItem(["UTIB", "FDRL", "ICIC", "HDFC"])}/RRN-${generateUpiRef()}/${randName(DR_NAMES)}/UPI-PAYMENT`,
+    () => `UPI/${randItem(["SIBL", "SBIN"])}/RRN-${generateUpiRef()}/${randName(DR_NAMES)}/MOBILE-PAY`,
 ];
 const CREDIT_DESCS = [
     () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(CR_NAMES)}/UPI`,
-    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(CR_NAMES)}/UPI`,
-    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(CR_NAMES)}/UPI`,
-    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(CR_NAMES)}/UPI`,
-    () => `DEP TFR NEFT*HDFC0000001*HDFCH00${Math.floor(1 + Math.random() * 8)}`,
-    () => `UPI/${randItem(["SIBL", "SBIN", "UTIB", "FDRL", "BKID", "YESB"])}/RRN-${generateUpiRef()}/${randName(CR_NAMES)}/UPI`,
-    () => `CHQ TRFR FROM 004273866${Math.floor(1000 + Math.random() * 9000)} OF ${randName(CR_NAMES)}`,
+    () => `UPI/${randItem(["UTIB", "FDRL", "ICIC", "HDFC"])}/RRN-${generateUpiRef()}/${randName(CR_NAMES)}/UPI-RECEIVE`,
+    () => `UPI/${randItem(["SIBL", "SBIN"])}/RRN-${generateUpiRef()}/${randName(CR_NAMES)}/FUND-TRANSFER`,
 ];
 
 // Salary-specific descriptions — ONLY used for the big monthly salary credit

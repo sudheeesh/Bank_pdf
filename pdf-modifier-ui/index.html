@@ -7,10 +7,15 @@
   <title>PDF Modifier Pro — Smart Bank Statement Editor</title>
   <meta name="description"
     content="Upload a bank statement PDF, set constraints, and download a clean modified statement." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
-    rel="stylesheet" />
+  <!-- Offline-ready Font Stack -->
+  <style>
+    :root {
+      --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace;
+    }
+    body { font-family: var(--font-main) !important; }
+    input, select, .tx-entry-table td input, .tx-entry-table td select, .bal-value { font-family: var(--font-mono) !important; }
+  </style>
   <link rel="stylesheet" href="style.css" />
   <style>
     /* ===== BUILD STATEMENT STYLES ===== */
@@ -102,7 +107,8 @@
       letter-spacing: 0.5px;
     }
 
-    .acct-grid input {
+    .acct-grid input,
+    .acct-grid textarea {
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 8px;
@@ -596,6 +602,10 @@
             <input type="text" id="b-period" placeholder="01-06-2025 To 07-12-2025" />
           </div>
           <div class="fg">
+            <label>Joint Holders</label>
+            <input type="text" id="b-joint-holders" placeholder="Name 2, Name 3" />
+          </div>
+          <div class="fg">
             <label>CIF No</label>
             <input type="text" id="b-cif" placeholder="" />
           </div>
@@ -628,12 +638,20 @@
             <input type="text" id="b-email" placeholder="email@example.com" />
           </div>
           <div class="fg">
-            <label>Regd. Mobile Number</label>
+            <label>Regd. Mobile / Phone No</label>
             <input type="text" id="b-mobile" placeholder="+91-XXXXXXXXXX" />
           </div>
           <div class="fg">
+            <label>Nomination</label>
+            <input type="text" id="b-nomination" placeholder="Registered" />
+          </div>
+          <div class="fg">
+            <label>OD Limit</label>
+            <input type="text" id="b-od-limit" placeholder="0.00" />
+          </div>
+          <div class="fg">
             <label>Address</label>
-            <input type="text" id="b-address" placeholder="Line 1\nLine 2\nLine 3" />
+            <textarea id="b-address" placeholder="Line 1\nLine 2\nLine 3" rows="3" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #fff; padding: 9px 12px; font-size: 0.85rem; font-family: inherit; transition: border-color 0.2s; width: 100%;"></textarea>
           </div>
           <div class="fg">
             <label>Pin Code</label>
@@ -660,8 +678,16 @@
             <input type="text" id="b-branch-pin" placeholder="6XXXXX" />
           </div>
           <div class="fg">
+            <label>Branch City</label>
+            <input type="text" id="b-branch-city" placeholder="City - Pincode" />
+          </div>
+          <div class="fg">
+            <label>Branch State</label>
+            <input type="text" id="b-branch-state" placeholder="STATE" />
+          </div>
+          <div class="fg">
             <label>Branch Address</label>
-            <input type="text" id="b-branch-address" placeholder="" />
+            <textarea id="b-branch-address" placeholder="Branch Street\nCity, State" rows="3" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #fff; padding: 9px 12px; font-size: 0.85rem; font-family: inherit; transition: border-color 0.2s; width: 100%;"></textarea>
           </div>
         </div>
         <div class="tab-nav-btns">

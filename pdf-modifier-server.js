@@ -110,10 +110,22 @@ function extractAccountInfo(rawText) {
             if (match) {
                 let val = match[1].split("\n")[0].trim();
                 // Clean up value by looking for the next common label on the same line
-                const nextLabelIdx = val.search(/CIF|Account|Product|IFSC|MICR|Currency|Status|Nominee|CKYC|Email|Branch|Statement/i);
+                const nextLabelIdx = val.search(/CIF|Account|Product|IFSC|MICR|Currency|Status|Nominee|CKYC|Email|Branch|Statement|Period/i);
                 if (nextLabelIdx !== -1 && nextLabelIdx > 2) {
                     val = val.substring(0, nextLabelIdx).replace(/[:\-]$/, "").trim();
                 }
+                
+                // More aggressive cleanup for swallowed labels
+                if (val.includes(" :")) {
+                    const parts = val.split(/\s+/);
+                    let cleaned = [];
+                    for(const word of parts) {
+                        if (/^[A-Z][a-z]+:$/.test(word) || /Statement|CIF|Account|IFSC|MICR/i.test(word)) break;
+                        cleaned.push(word);
+                    }
+                    val = cleaned.join(" ");
+                }
+
                 // Specifically for email, ensure it's a valid email
                 if (f.key === "email" || f.key === "branchEmail") {
                     const emailMatch = val.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
@@ -275,6 +287,8 @@ function extractAccountInfo(rawText) {
         // Address starts after name
         if (info.accountName) {
             const addrLines = [];
+            const summaryMarkers = /Cleared\s*Balance|Uncleared\s*(?:Amt|Amount)|MOD\s*Bal|Monthly\s*Avg|Interest\s*Rate|Limit|Drawing\s*Power/i;
+            
             for (let i = currentIdx + 1; i < currentIdx + 10; i++) {
                 const line = lines[i] || "";
                 if (line.toLowerCase().includes("pin code")) {
@@ -284,12 +298,19 @@ function extractAccountInfo(rawText) {
                 }
                 // Stop if we hit some other section
                 if (/Date of Statement|Time of Statement|CIF No|Account No|Branch Code/i.test(line)) break;
+                if (summaryMarkers.test(line)) break;
 
                 // Only add if it doesn't look like a right-side field interleaved
                 if (!/[:\-]/.test(line) && line.length > 3) {
                     addrLines.push(line);
                 }
             }
+            
+            // Refinement: If accountName is likely a branch name fragment
+            if (info.accountName && info.branch && info.branch.toUpperCase().includes(info.accountName.toUpperCase()) && addrLines.length > 0) {
+                 info.accountName = addrLines.shift();
+            }
+
             info.address = addrLines.join("\\n");
         }
     }
@@ -415,7 +436,7 @@ function extractAccountInfo(rawText) {
                 if (!ln || federalLabels.some(l => ln.includes(l)) || ln.includes(":")) break;
                 brLines.push(ln.trim());
             }
-            if (brLines.length > 0) info.branchAddress = brLines.join("\\n");
+            if (brLines.length > 0) info.branchAddress = brLines.join("\n");
         }
 
         // Customer Address special handling for Federal
@@ -432,7 +453,99 @@ function extractAccountInfo(rawText) {
                 if (!nextL || federalLabels.some(l => nextL.includes(l)) || nextL.includes(":")) break;
                 addrLines.push(nextL.trim());
             }
-            info.address = addrLines.join("\\n");
+            info.address = addrLines.join("\n");
+        }
+    }
+
+    // 2d. HDFC Bank Specialized Extraction
+    if (info.bankName === "HDFC Bank") {
+        const hdfcFields = [
+            { key: "branch", labels: ["Account Branch"] },
+            { key: "city", labels: ["City"] },
+            { key: "state", labels: ["State"] },
+            { key: "mobileNumber", labels: ["Phone no."] },
+            { key: "odLimit", labels: ["OD Limit"] },
+            { key: "currency", labels: ["Currency"] },
+            { key: "email", labels: ["Email"] },
+            { key: "cif", labels: ["Cust ID"] },
+            { key: "accountNumber", labels: ["Account No"] },
+            { key: "accountOpenDate", labels: ["A/C Open Date"] },
+            { key: "accountStatus", labels: ["Account Status"] },
+            { key: "ifsc", labels: ["RTGS/NEFT IFSC"] },
+            { key: "micr", labels: ["MICR"] },
+            { key: "branchCode", labels: ["Branch Code"] },
+            { key: "product", labels: ["Product Code"] },
+            { key: "nomination", labels: ["Nomination"] }
+        ];
+
+        hdfcFields.forEach(f => {
+            for (const label of f.labels) {
+                const regex = new RegExp(label + "\\s*[:\\-]?\\s*(.*)", "i");
+                const match = text.match(regex);
+                if (match) {
+                    let val = match[1].split("\n")[0].trim();
+                    const nextFieldIdx = val.search(/Account|Branch|City|State|Phone|Limit|Currency|Email|Cust|A\/C|Status|IFSC|MICR|Nomination|Product|Preferred/i);
+                    if (nextFieldIdx !== -1 && nextFieldIdx > 3) val = val.substring(0, nextFieldIdx).trim();
+                    if (val && !info[f.key]) info[f.key] = val;
+                }
+            }
+        });
+
+        // Precise Address / Name Extraction
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        let jhIdx = lines.findIndex(l => l.toUpperCase().includes('JOINT HOLDERS'));
+        
+        // Find Name/Address by identifying the Name prefix (MR, MRS, MS, MISS)
+        // Allow optional dots and handle spaces properly
+        let nameIdx = lines.findIndex(l => l.toUpperCase().match(/^(MR|MRS|MS|MISS)\.?\s+/i));
+        
+        // If that fails, look for the first all-caps line that looks like a name (no colons, no dates)
+        if (nameIdx === -1) {
+            nameIdx = lines.findIndex((l, idx) => idx > 3 && idx < 20 && l.toUpperCase() === l && l.length > 5 && !l.includes(':') && !l.match(/\d{2}/));
+        }
+
+        if (nameIdx !== -1) {
+            const potentialName = lines[nameIdx].trim();
+            // Sanity check: Name shouldn't be a date or a bank name
+            if (!potentialName.match(/\d{2}\//) && !potentialName.toUpperCase().includes('BANK')) {
+                info.accountName = potentialName.replace(/\s+/g, ' ');
+                
+                // Collect address lines but stop either at jhIdx or after 8 lines
+                let searchEnd = jhIdx !== -1 && jhIdx > nameIdx ? Math.min(jhIdx, nameIdx + 9) : nameIdx + 9;
+                const addrLns = [];
+                for (let i = nameIdx + 1; i < searchEnd; i++) {
+                    const l = lines[i];
+                    const u = l.toUpperCase();
+                    // Skip if it looks like a transaction date or bank metadata
+                    if (l.match(/^\d{2}\/\d{2}\//) || l.match(/^[0-9\/:\s-]+$/)) continue;
+                    if (u.includes('STATEMENT') || u.includes('PAGE') || u.includes('GSTN') || u.includes('HDFC')) continue;
+                    if (u.includes('NARRATION') || u.includes('WITHDRAWAL') || u.includes('DEPOSIT')) break;
+                    addrLns.push(l);
+                }
+                info.address = addrLns.join('\n').trim();
+            }
+            if (jhIdx !== -1) {
+                const jhText = lines[jhIdx].split(/[:\-]/)[1];
+                if (jhText) info.jointHolders = jhText.trim();
+            }
+        }
+
+        // Precise Branch Address Extraction
+        let addrIdx = lines.findIndex(l => l.toUpperCase().startsWith('ADDRESS') && !l.toUpperCase().includes('EMAIL'));
+        let cityIdx = lines.findIndex(l => l.toUpperCase().startsWith('CITY'));
+        
+        if (addrIdx !== -1 && cityIdx !== -1 && cityIdx > addrIdx && cityIdx - addrIdx < 8) {
+             const headMatch = lines[addrIdx].match(/Address\s*[:\-]\s*(.*)/i);
+             const head = headMatch && headMatch[1] ? headMatch[1].trim() : "";
+             const bdLns = head ? [head] : [];
+             // Collect next lines until city, avoiding garbage
+             for (let j = addrIdx + 1; j < cityIdx; j++) {
+                const line = lines[j].trim();
+                if (line && !line.match(/Statement|Page|Account|Branch|To:|From:/i)) {
+                    bdLns.push(line);
+                }
+             }
+             info.branchAddress = bdLns.join('\n');
         }
     }
     
@@ -468,13 +581,25 @@ router.post("/api/upload", upload.single("pdf"), async (req, res) => {
             const fbInfo = extractAccountInfo(fullRawText);
             const isFederal = /federal\s*bank/i.test(fullRawText);
             const isCanara = /canara\s*bank/i.test(fullRawText);
+            const isHDFC = /hdfc\s*bank/i.test(fullRawText);
             
             Object.keys(fbInfo).forEach(k => {
-                // If it's Federal or Canara, prioritize the text-based clean values for key fields
-                if ((isFederal || isCanara) && fbInfo[k]) {
-                    accountInfo[k] = fbInfo[k];
-                } else if (!accountInfo[k] && fbInfo[k]) {
-                    accountInfo[k] = fbInfo[k];
+                // If it's Canara, NEVER fall back for key fields — stay empty or stay with smart result
+                if (isCanara && (k === 'address' || k === 'accountName' || k === 'branch')) return;
+
+                // For HDFC, fbInfo's targeted regex is MUCH more accurate than spatial bounds for address fields
+                if (isHDFC && ['address', 'accountName', 'branchAddress', 'jointHolders', 'city', 'state'].includes(k)) {
+                    if (fbInfo[k] && fbInfo[k].length > 3) {
+                        accountInfo[k] = fbInfo[k];
+                    }
+                    return;
+                }
+
+                // FALLBACK ONLY: Only use basic text-based extraction if smart extraction failed for that field
+                if (!accountInfo[k] && fbInfo[k]) {
+                    if (k !== 'address' && k !== 'accountName') {
+                        accountInfo[k] = fbInfo[k];
+                    }
                 }
             });
         } catch (e) {

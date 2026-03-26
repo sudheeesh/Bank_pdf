@@ -1,9 +1,31 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
+const fs = require('fs');
 
 let mainWindow;
-let serverProcess;
+
+// Detection for packaged state and browser paths
+const isPackaged = app.isPackaged;
+if (isPackaged) {
+  // Point to the bundled Chrome inside Electron's resources
+  process.env.PUPPETEER_EXECUTABLE_PATH = path.join(
+    process.resourcesPath, 
+    '.cache', 
+    'puppeteer', 
+    'chrome', 
+    'win64-145.0.7632.77', 
+    'chrome-win64', 
+    'chrome.exe'
+  );
+}
+
+// Initialize the Express server immediately as part of the main process
+// This is faster than spawn and much more reliable for distributed apps
+try {
+  require(path.join(__dirname, 'server.js'));
+} catch (err) {
+  console.error('Failed to start integrated server:', err);
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -17,10 +39,8 @@ function createWindow() {
     }
   });
 
-  // Wait a bit for server to start before loading
-  setTimeout(() => {
-    mainWindow.loadURL('http://localhost:3002');
-  }, 3000);
+  // Load immediately since server is now started in-process
+  mainWindow.loadURL('http://localhost:3002');
 
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -28,23 +48,12 @@ function createWindow() {
 }
 
 app.on('ready', () => {
-  // Start Express server
-  serverProcess = spawn('node', [path.join(__dirname, 'server.js')], {
-    stdio: 'inherit'
-  });
-
   createWindow();
 });
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
-  }
-});
-
-app.on('quit', () => {
-  if (serverProcess) {
-    serverProcess.kill();
   }
 });
 

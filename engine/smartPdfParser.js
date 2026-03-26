@@ -382,7 +382,10 @@ function extractAccountInfoFromParsed(parsed) {
         header: /STATEMENT\s*OF\s*ACCOUNT/i
     };
 
+    const masterRejection = /(?:Account\s*No|CIF\s*No|Email|Nominee|CKYC|Product|IFSC|MICR|Currency|Uncleared\s*(?:Amt|Amount)|Cleared\s*Balance|MOD\s*Bal|Monthly\s*Avg|Acc(?:ount)?\s*Open|Limit|Drawing|Interest(?:\s*Rate)?|Balance\s*as\s*on|Date\s*of\s*Statement|Time\s*of\s*Statement|Statement\s*From|Statement\s*Date|Page\s*no|Post\s*Date|Value\s*Date|Description|Reference|Debit|Credit|Balance|Total\s*Credits|Total\s*Debits|Closing\s*Balance|STATEMENT\s*OF\s*ACCOUNT|PARTICULARS|CHQ|CHEQUE|TRANS|TXN)/i;
+
     let leftLines = [];
+    let brAddrLines = []; // Initialize brAddrLines here
     let headerY = 0;
     let tableStartY = 100;
 
@@ -390,14 +393,11 @@ function extractAccountInfoFromParsed(parsed) {
     for (const row of rows) {
         const txt = row.cells.map(c => c.text).join(" ");
         if (labels.header.test(txt)) headerY = row.y;
-        if ((headerY > 0 || row.y > 10) && /Post\s*Date|Value\s*Date|Date\s*Description|DATE\s*PARTICULARS|PARTICULARS\s*CHQ/i.test(txt)) {
+        if ((headerY > 0 || row.y > 10) && /Post\s*Date|Value\s*Date|Date\s*Description|DATE\s*PARTICULARS|PARTICULARS/i.test(txt)) {
             tableStartY = row.y;
             break;
         }
     }
-
-    // Branch Address accumulation
-    const brAddrLines = [];
 
     // Second Pass: Extract based on Zones
     for (const row of rows) {
@@ -405,21 +405,26 @@ function extractAccountInfoFromParsed(parsed) {
         const rowText = cells.map(c => c.text).join(" ");
 
         // --- ZONE 1: CUSTOMER INFO (Left Side) ---
-        // For SBI, info is between headerY and tableStartY. For SIB, info is usually ABOVE headerY.
+        // For SBI, info is between headerY and tableStartY.
         // We capture any left-aligned text above tableStartY that isn't part of the right-side header.
         if (row.y < tableStartY) {
             const leftCells = cells.filter(c => c.rawX < 18);
             const leftText = leftCells.map(c => c.text).join(" ").trim();
 
             if (leftText && leftText.length > 2) {
-                const isSummaryMarker = /Uncleared\s*(?:Amt|Amount)|Cleared\s*Balance|MOD\s*Bal|Monthly\s*Avg|Acc(?:ount)?\s*Open|Limit|Drawing|Interest(?:\s*Rate)?|Balance\s*as\s*on|Date\s*of\s*Statement|Time\s*of\s*Statement|Statement\s*From|Statement\s*Date/i.test(leftText);
-                const isFieldLabel = /Account\s*No|CIF\s*No|Email|Nominee|CKYC|Product|IFSC|MICR|Currency/i.test(leftText);
+                // Ignore if it matches a field label
+                const isFieldLabel = /Account\s*No|CIF\s*No|Email|Nominee|CKYC|Product|IFSC|MICR|Currency|Branch\s*Code/i.test(leftText);
 
                 if (labels.pin.test(leftText)) {
                     const pinMatch = rowText.match(/(\d{6})/);
                     if (pinMatch && !info.customerPinCode) info.customerPinCode = pinMatch[1];
-                } else if (!isFieldLabel && !isSummaryMarker && leftLines.length < 8) {
-                    leftLines.push(leftText);
+                } else if (!isFieldLabel && leftLines.length < 8) {
+                    // Only push if it's significantly below headerY (for SBI) to avoid branch info
+                    // But if it's SIB, it might be above. We'll stick to a heuristic:
+                    const isBankHeader = /STATE\s*BANK\s*OF\s*INDIA|Branch\s*Name/i.test(leftText);
+                    if (!isBankHeader && !labels.header.test(leftText)) {
+                         leftLines.push(leftText);
+                    }
                 }
             }
         }
@@ -443,13 +448,7 @@ function extractAccountInfoFromParsed(parsed) {
                         // Scenario A: Value in the same cell
                         if (txt.includes(":")) {
                             const parts = txt.split(":");
-                            for (let i = 1; i < parts.length; i++) {
-                                const p = parts[i].trim();
-                                if (p && !Object.values(labels).some(l => l.test(p))) {
-                                    val = p;
-                                    break;
-                                }
-                            }
+                            val = parts[1] ? parts[1].trim() : "";
                         }
 
                         // Scenario B: Value in subsequent cells
@@ -461,8 +460,7 @@ function extractAccountInfoFromParsed(parsed) {
 
                                 // Guard: Don't jump into another field label
                                 const isLabel = Object.values(labels).some(p => p.test(nextTxt));
-                                // Only break if it's a label WITHOUT a value following it, or a very long string that looks like a label
-                                if (isLabel && nextTxt.length < 25 && nextTxt.endsWith(":")) break;
+                                if (isLabel && nextTxt.length < 25 && nextTxt.includes(":")) break;
 
                                 val = nextTxt.replace(/^[:\-]\s*/, "").trim();
                                 if (val) break;
@@ -473,11 +471,10 @@ function extractAccountInfoFromParsed(parsed) {
                             if (key === 'pin') {
                                 if (!info.branchPinCode) info.branchPinCode = val;
                             } else if (!info[key]) {
-                                // Validation
+                                // Validation: avoid summary info leaking
                                 if (key !== 'email' && key !== 'branchEmail' && val.includes("@")) return;
                                 if (key === 'ckyc' && val.length < 5) return;
-                                // Check for labels in the value itself
-                                if (/CIF|Account|IFSC|MICR|Nominee|CKYC/i.test(val)) return;
+                                if (/Cleared\s*Balance|Uncleared/i.test(val)) return;
 
                                 info[key] = val;
                             }
@@ -487,13 +484,16 @@ function extractAccountInfoFromParsed(parsed) {
             });
 
             // Branch Address accumulation (only lines in Zone 2 that are NOT labels)
-            if (row.y < (headerY + 3 || 15)) {
+            if (row.y < (headerY + 5 || 20)) {
                 const isKnownLabel = Object.values(labels).some(l => l.test(rightText));
-                const isBrFieldLabel = /Branch\s*(?:Code|Email|Phone)|Pin\s*Code/i.test(rightText);
+                const isBrFieldLabel = /Branch\s*(?:Code|Email|Phone)|Pin\s*Code|CIF\s*No|Account\s*No/i.test(rightText);
+                const isTableHeader = /Post\s*Date|Value\s*Date|Description|Narration|Debit|Credit|Balance/i.test(rightText);
 
-                if (rightText && !isKnownLabel && !isBrFieldLabel && !labels.bank.test(rightText) && rightText.length > 2) {
-                    if (!info.branch) info.branch = rightText;
-                    else brAddrLines.push(rightText);
+                if (rightText && !isKnownLabel && !isBrFieldLabel && !isTableHeader && !labels.bank.test(rightText) && rightText.length > 2) {
+                    if (!masterRejection.test(rightText)) {
+                        if (!info.branch) info.branch = rightText;
+                        else brAddrLines.push(rightText);
+                    }
                 }
             }
         }
@@ -510,12 +510,33 @@ function extractAccountInfoFromParsed(parsed) {
     if (leftLines.length > 0) {
         info.accountName = leftLines[0].toUpperCase();
         info.address = leftLines.slice(1).join("\\n");
+        
+        // Refinement: If accountName is likely a branch name fragment
+        if (info.accountName && info.branch && info.branch.toUpperCase().includes(info.accountName) && leftLines.length > 1) {
+             leftLines.shift();
+             info.accountName = leftLines[0].toUpperCase();
+             info.address = leftLines.slice(1).join("\\n");
+        }
     }
 
-    // 3. Format Branch Address
+    // 3. Clean Address from Summary Info
+    if (info.address) {
+        const summaryMarkers = [/Cleared\s*Balance/i, /Uncleared\s*Amount/i, /MOD\s*Bal/i, /Monthly\s*Avg/i, /Interest\s*Rate/i, /PARTICULARS/i, /Post\s*Date/i];
+        summaryMarkers.forEach(m => {
+            const idx = info.address.search(m);
+            if (idx !== -1) {
+                info.address = info.address.substring(0, idx).trim();
+            }
+        });
+        info.address = info.address.replace(/(?:\\n|\s|:)+$/, "").trim();
+    }
+
+    // 4. Format Branch Address
     if (brAddrLines.length > 0) {
         info.branchAddress = brAddrLines.join("\\n");
     }
+
+    if (info.accountName && masterRejection.test(info.accountName)) info.accountName = "";
 
     // 4. Fallback for Branch Code from Email
     if (!info.branchCode && info.branchEmail) {

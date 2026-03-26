@@ -33,7 +33,7 @@ function buildCanaraHTML(opts) {
     const creditCount = transactions.filter(tx => (tx.newCredit !== undefined ? tx.newCredit : (tx.credit || 0)) > 0).length;
 
     const ROWS_FIRST_PAGE = 4;
-    const ROWS_OTHER_PAGES = 12;
+    const ROWS_OTHER_PAGES = 13;
     const pages = [];
     let current = 0;
     while (current < transactions.length) {
@@ -69,7 +69,7 @@ function buildCanaraHTML(opts) {
                 ["Account Branch", branch || "UNKNOWN BRANCH"],
                 ["IFSC", ifsc || ""],
                 ["MICR", micr || ""],
-                ["Branch Address", (branchAddress || "").replace(/\\n/g, "<br>")],
+                ["Branch Address", (branchAddress || "").replace(/\\n|\n/g, "<br>")],
                 ["Email Id", email || ""],
                 ["Contact Number", mobileNumber || contactNumber || ""],
                 ["Bank Toll Free Number", bankTollFree || "18001030"],
@@ -78,7 +78,7 @@ function buildCanaraHTML(opts) {
                 ["Product Name", product || "CANARA SB GENERAL"],
                 ["Customer ID", cif || ""],
                 ["Customer Name", (accountName || "").toUpperCase()],
-                ["Address", (address || "").replace(/\\n/g, "<br>")],
+                ["Address", (address || "").replace(/\\n|\n/g, "<br>")],
                 ["VPA Id", vpaId || ""],
                 ["Nominee Reference num", nomineeRef || ""],
                 ["Nominee Name", (nominee || "").toUpperCase()],
@@ -92,20 +92,20 @@ function buildCanaraHTML(opts) {
             fields.forEach(([lbl, val]) => {
                 const isBankLabel = lbl === "CANARA BANK";
                 html += `
-                <div class="cnr-detail-row">
-                    <div class="cnr-label">${escHtml(lbl)}</div>
-                    <div class="cnr-sep">${isBankLabel ? "" : ":"}</div>
-                    <div class="cnr-value">${isBankLabel ? "" : val}</div>
+                <div class="cnr-detail-row" style="margin-bottom: 2px;">
+                    <div class="cnr-label" style="font-size: 8.5pt;">${escHtml(lbl)}</div>
+                    <div class="cnr-sep" style="font-size: 8.5pt;">${isBankLabel ? "" : ":"}</div>
+                    <div class="cnr-value" style="font-size: 8.5pt; line-height: 1.3;">${isBankLabel ? "" : val}</div>
                 </div>`;
             });
             html += `</div>`;
 
             // PERIOD / CURRENCY / SWIFT
             html += `
-            <div class="cnr-meta-info">
+            <div class="cnr-meta-info" style="margin-top: 10px;">
                 <div class="cnr-meta-row"><span class="m-lbl">Period :</span> <span class="m-val">${escHtml(period || "")}</span></div>
                 <div class="cnr-meta-row"><span class="m-lbl">Name Currency :</span> <span class="m-val">${escHtml(nameCurrency || "INDIAN RUPEES")}</span></div>
-                <div class="cnr-meta-row"><span class="m-lbl">Swift code:</span> <span class="m-val">${escHtml(swiftCode || "CNRBINBBBFD")}</span></div>
+                <div class="cnr-meta-row"><span class="m-lbl">Swift code :</span> <span class="m-val">${escHtml(swiftCode || "CNRBINBBBFD")}</span></div>
             </div>`;
         }
 
@@ -129,12 +129,12 @@ function buildCanaraHTML(opts) {
         if (isFirst) {
             html += `
             <tr class="cnr-compact-row">
-                <td style="text-align: center; white-space: nowrap;">01-JAN-25</td>
-                <td style="text-align: center; white-space: nowrap;">01-JAN-25</td>
-                <td style="text-align: center;">0</td>
+                <td style="text-align: center; white-space: nowrap;"></td>
+                <td style="text-align: center; white-space: nowrap;"></td>
+                <td style="text-align: center;"></td>
                 <td></td>
                 <td>B/F ...</td>
-                <td class="td-amt">0.00</td>
+                <td class="td-amt"></td>
                 <td class="td-amt">${inr(openingBalance)}</td>
                 <td class="td-amt" style="text-align: right;">${inr(openingBalance)}</td>
             </tr>`;
@@ -145,7 +145,6 @@ function buildCanaraHTML(opts) {
             const debit = tx.newDebit !== undefined ? tx.newDebit : (tx.debit || 0);
             const credit = tx.newCredit !== undefined ? tx.newCredit : (tx.credit || 0);
             const balance = tx.newBalance !== undefined ? tx.newBalance : (tx.balance || 0);
-            const ref = tx.refNo || (Math.random() > 0.5 ? Math.floor(500000000000 + Math.random() * 400000000000).toString() : "");
 
             let desc = '';
             if (tx.descCells && tx.descCells.length) {
@@ -153,15 +152,17 @@ function buildCanaraHTML(opts) {
             } else {
                 desc = tx.description || tx.desc || '';
             }
-            // Strip prepended date and reference sequence (e.g. 01-JAN-25 1234567890)
+            // Strip prepended date and reference sequence
             desc = desc.replace(/^\s*\d{1,2}[\/-][A-Za-z]{3,}[\/-]\d{1,4}\s+\d{10,}\s+/i, '');
             desc = desc.replace(/^\s*\d{1,2}[\/-]\d{1,2}[\/-]\d{1,4}\s+\d{10,}\s+/i, '');
             desc = desc.trim();
 
-            const descUpper = desc.toUpperCase();
+            let descUpper = desc.toUpperCase();
+            let isNeft = descUpper.includes('NEFT');
+            let ref = tx.refNo || "";
 
             if (descUpper.includes('SALARY')) {
-                const neftRef = (ref && ref.length > 5) ? ref : 'N' + Math.floor(1000000000 + Math.random() * 8000000000).toString();
+                const neftRef = (tx.refNo && tx.refNo.length > 5) ? tx.refNo : 'N' + Math.floor(1000000000 + Math.random() * 8000000000).toString();
                 let companyPart = "COMPANY NAME";
                 if (desc.includes('/')) {
                     const parts = desc.split('/');
@@ -170,10 +171,12 @@ function buildCanaraHTML(opts) {
                 }
                 const username = opts.name || opts.accountName || opts.customerName || "JABIR";
                 desc = `NEFT/${neftRef}/${companyPart}/${username}/SALARY`;
-            } else if (descUpper.includes('UPI') || descUpper.includes('TFR') || descUpper.includes('NEFT')) {
+                isNeft = true;
+                ref = ""; // NEFT has it in description
+            } else {
                 const isDr = debit > 0;
                 const upiMode = isDr ? 'UPI/DR' : 'UPI/CR';
-                const upiRef = (ref && ref.length > 5) ? ref : '5' + Math.floor(10000000000 + Math.random() * 80000000000).toString();
+                ref = (tx.refNo && tx.refNo.length > 5) ? tx.refNo : (isDr ? '5182' : '1073') + Math.floor(10000000 + Math.random() * 90000000).toString();
                 let namePart = "NOUHIRA";
                 if (desc.includes('/')) {
                     const parts = desc.split('/');
@@ -197,7 +200,13 @@ function buildCanaraHTML(opts) {
                 const tM = String(Math.floor(Math.random() * 60)).padStart(2, '0');
                 const tS = String(Math.floor(Math.random() * 60)).padStart(2, '0');
 
-                desc = `${upiMode}/${upiRef}/${namePart}/CNRB/**T2020@${domain}/UPI//${hash}/${d}/${m}/${y} ${tH}:${tM}:${tS}`;
+                desc = `${upiMode}/${ref}/${namePart}/CNRB/**T2020@${domain}/UPI//${hash}/${d}/${m}/${y} ${tH}:${tM}:${tS}`;
+                isNeft = false;
+            }
+
+            // Final check for the REF/CHQ.NO column (ALWAYS show for everything including NEFT)
+            if (!ref) {
+                ref = Math.floor(100000000000 + Math.random() * 899999999999).toString();
             }
 
             html += `
@@ -265,11 +274,10 @@ function buildCanaraHTML(opts) {
                 </div>
 
                 <div class="cnr-ombudsman">
-                    <div style="text-align: center; margin-top: 15px;">Fort Glacis</div>
+                    <div style="text-align: center; margin-top: 15px; font-weight: bold;">OFFICE OF BANKING OMBUDSMAN</div>
                     Details of Ombudsman : Centralized Receipt and Processing Centre (CRPC)<br>
-                    Office of Banking Ombudsman<br>
                     Reserve Bank of India<br>
-                    4th Floor,Central Vista,Sector-17<br>
+                    4th Floor, Central Vista, Sector-17<br>
                     CHANDIGARH<br>
                     160017<br>
                     Tel: 14448 / &nbsp; Fax:<br>
