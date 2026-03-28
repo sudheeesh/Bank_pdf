@@ -159,12 +159,22 @@ async function handleUpload(file) {
     const fd = new FormData();
     fd.append('pdf', file);
     const res = await fetch('/api/upload', { method: 'POST', body: fd });
+    
+    if (!res.ok) {
+      let errorMsg = 'Upload failed';
+      try {
+        const errData = await res.json();
+        errorMsg = errData.error || errorMsg;
+      } catch (e) {
+        errorMsg = `Server error: ${res.status} ${res.statusText}`;
+      }
+      throw new Error(errorMsg);
+    }
+
     const data = await res.json();
     clearInterval(iv);
     fill.style.width = '100%';
     label.textContent = 'Upload complete!';
-
-    if (!res.ok) throw new Error(data.error || 'Upload failed');
 
     setTimeout(() => {
       state.fileId = data.fileId;

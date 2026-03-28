@@ -19,7 +19,11 @@ const router = express.Router();
 /* ---------- FILE UPLOAD ---------- */
 const storage = multer.diskStorage({
     destination: "uploads/",
-    filename: (req, file, cb) => cb(null, `${Date.now()}_${file.originalname}`),
+    filename: (req, file, cb) => {
+        // Sanitize filename for Windows: remove invalid characters and limit length
+        const safeName = file.originalname.replace(/[<>:"/\\|?*]/g, "").substring(0, 100);
+        cb(null, `${Date.now()}_${safeName}`);
+    },
 });
 const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
 
@@ -566,49 +570,50 @@ router.post("/api/upload", upload.single("pdf"), async (req, res) => {
         let textPreview = "";
         let accountInfo = {};
 
+        // Optimization: If file is very large (>15MB), skip spatial parse during initial upload
+        // and only do the basic parse for bank detection. spatial parse will run in /api/smart-analyze
+        const isLargeFile = req.file.size > 15 * 1024 * 1024;
+        
         try {
-            // Priority 1: Coordinate-aware extraction (most reliable for interleaved SBI layout)
-            const smartParsed = await smartParse(filePath);
-            accountInfo = extractAccountInfoFromParsed(smartParsed);
+            if (!isLargeFile) {
+                console.log(`[upload] Processing ${req.file.originalname} (${(req.file.size/1024/1024).toFixed(1)} MB)`);
+                const smartParsed = await smartParse(filePath);
+                accountInfo = extractAccountInfoFromParsed(smartParsed);
+            } else {
+                console.log(`[upload] Large file detected (${(req.file.size/1024/1024).toFixed(1)} MB), skipping spatial parse for initial response.`);
+            }
 
             // Always also run pdfParse for full raw text — needed for bank detection
-            // (coordinate text from first page only may miss bank name in header)
             const parsed = await pdfParse(pdfBytes);
             const fullRawText = parsed.text || '';
-            textPreview = fullRawText.substring(0, 8000);  // Give detectBank plenty of context
+            textPreview = fullRawText.substring(0, 8000);
 
-            // Merge with text-based fallback to ensure maximum field coverage
+            // Merge with text-based fallback
             const fbInfo = extractAccountInfo(fullRawText);
             const isFederal = /federal\s*bank/i.test(fullRawText);
             const isCanara = /canara\s*bank/i.test(fullRawText);
             const isHDFC = /hdfc\s*bank/i.test(fullRawText);
             
             Object.keys(fbInfo).forEach(k => {
-                // If it's Canara, NEVER fall back for key fields — stay empty or stay with smart result
                 if (isCanara && (k === 'address' || k === 'accountName' || k === 'branch')) return;
-
-                // For HDFC, fbInfo's targeted regex is MUCH more accurate than spatial bounds for address fields
                 if (isHDFC && ['address', 'accountName', 'branchAddress', 'jointHolders', 'city', 'state'].includes(k)) {
-                    if (fbInfo[k] && fbInfo[k].length > 3) {
-                        accountInfo[k] = fbInfo[k];
-                    }
+                    if (fbInfo[k] && fbInfo[k].length > 3) accountInfo[k] = fbInfo[k];
                     return;
                 }
-
-                // FALLBACK ONLY: Only use basic text-based extraction if smart extraction failed for that field
                 if (!accountInfo[k] && fbInfo[k]) {
-                    if (k !== 'address' && k !== 'accountName') {
-                        accountInfo[k] = fbInfo[k];
-                    }
+                    if (k !== 'address' && k !== 'accountName') accountInfo[k] = fbInfo[k];
                 }
             });
         } catch (e) {
-            console.warn("[upload] Spatial parse failed, falling back to basic:", e.message);
+            console.warn("[upload] Parse failed:", e.message);
+            // Last resort fallback
             try {
                 const parsed = await pdfParse(pdfBytes);
-                textPreview = parsed.text.substring(0, 8000);
+                textPreview = (parsed.text || "").substring(0, 8000);
                 accountInfo = extractAccountInfo(parsed.text);
-            } catch (innerE) { }
+            } catch (innerE) {
+                console.error("[upload] Fatal parse error:", innerE.message);
+            }
         }
 
         // Detect which bank this PDF belongs to
