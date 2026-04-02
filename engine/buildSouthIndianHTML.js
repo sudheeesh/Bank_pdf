@@ -28,6 +28,7 @@ function buildSouthIndianHTML(opts) {
         micr = "",
         customerNo = "A45956134",
         statementPeriod = "01-08-2025 TO 28-01-2026",
+        branchAddress = "",
         logoSrc = "", // Passes base64 from server
     } = opts;
 
@@ -287,7 +288,26 @@ function buildSouthIndianHTML(opts) {
             headerDate = transactions[transactions.length - 1].dateCell ? transactions[transactions.length - 1].dateCell.text : "28-01-2026";
         }
 
-        // FULL LOGO & BANK ADDRESS (Every Page)
+        // Build right-side branch address lines
+        let rightAddrLines;
+        if (branchAddress && branchAddress.trim().length > 3 &&
+            !branchAddress.toUpperCase().includes("PARTICULARS") &&
+            !branchAddress.toUpperCase().includes("STATEMENT")) {
+            // Use the user-supplied branch address from the form
+            rightAddrLines = branchAddress.replace(/\\n/g, '\n').split('\n').map(l => escHtml(l.trim())).filter(Boolean);
+        } else {
+            // Default hardcoded Palakkad branch address
+            rightAddrLines = [
+                `DOOR NO. 9/1484, KAV, CENTRAL COMPL`,
+                `CHANDRA NAGAR`,
+                `PALAKKAD`,
+                `KERALA`,
+                `India`,
+                `678007`,
+                `Ph:0491-2570700`
+            ];
+        }
+
         finalHtml += `
             <div style="display: flex; justify-content: space-between; align-items: flex-end;">
                 <div style="width: 50%;">
@@ -295,18 +315,11 @@ function buildSouthIndianHTML(opts) {
                 </div>
                 <div class="sib-header-right">
                     IFSC:${displayIfsc}<br>
-                    DOOR NO. 9/1484, KAV, CENTRAL COMPL<br>
-                    CHANDRA NAGAR<br>
-                    PALAKKAD<br>
-                    KERALA<br>
-                    India<br>
-                    678007<br>
-                    Ph:0491-2570700
+                    ${rightAddrLines.join('<br>')}
                 </div>
             </div>
             <div class="header-line"></div>
         `;
-
         // FULL CUSTOMER DETAILS (Every Page)
         let displayAddress = address || "";
         if (displayAddress.length > 250 || displayAddress.toUpperCase().includes("PARTICULARS") || displayAddress.toUpperCase().includes("STATEMENT")) {

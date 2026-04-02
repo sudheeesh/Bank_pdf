@@ -167,8 +167,8 @@ function generateTransactions(opts) {
         totalFractionSum += (active / dInM);
     });
 
-    const isFloatingOpening = (openingBalance === null || openingBalance === undefined || String(openingBalance).trim() === "");
-    let givenOpeningBalance = isFloatingOpening ? null : Number(openingBalance);
+    const isFloatingOpening = true; // Always back-calculate from closing balance
+    let givenOpeningBalance = null;  // Never lock opening — work backwards from closing
 
     const limitDr = Number(maxMonthlyDebit) || 50000;
     const limitCr = Number(maxMonthlyCredit) || 150000;
@@ -287,56 +287,21 @@ function generateTransactions(opts) {
         transactions.push(...mTxns);
     }
 
-    // Final Step: Calculate the exact opening balance by working backwards from closing balance.
+    // Always back-calculate opening balance from closing balance
     // openingBalance = closingBalance - totalCredits + totalDebits
+    // This means the closing balance is ALWAYS exactly what the user asked for.
     let totalCr = transactions.reduce((s, t) => s + (t.credit || 0), 0);
     let totalDr = transactions.reduce((s, t) => s + (t.debit || 0), 0);
-    let exactOpening = round2(closingBalance - totalCr + totalDr);
-
-    // If user provided a fixed opening, use it. Otherwise, use our exact back-calculated one.
-    let startingBal = (givenOpeningBalance !== null) ? givenOpeningBalance : exactOpening;
+    let startingBal = round2(closingBalance - totalCr + totalDr);
     let running = startingBal;
 
-    // Apply running balances to all transactions
+    // Apply running balances
     transactions.forEach(tx => {
         running = round2(running + (tx.credit || 0) - (tx.debit || 0));
         tx.balance = running;
     });
 
-    // If user provided a fixed opening balance AND a fixed closing balance, 
-    // there might still be a mathematical gap at the end (e.g. they asked for ₹0 start to ₹18L end with only ₹40k limit).
-    // In that specific case, we spawn as many rows as needed strictly within limits.
-    let finalGap = round2(closingBalance - running);
-    if (Math.abs(finalGap) > 0 && givenOpeningBalance !== null) {
-        const limit = 2900; 
-        if (finalGap > 0) {
-            while (finalGap > 0) {
-                const chunk = round2(Math.min(finalGap, limit));
-                transactions.push({
-                    day: 28, debit: 0, credit: chunk,
-                    desc: `DEP TFR UPI/CR/${Math.floor(Math.random()*9e9)}/TRANSFER`,
-                    date: formatDate(new Date(end.getFullYear(), end.getMonth(), 28)),
-                    balance: round2(running + chunk)
-                });
-                running = round2(running + chunk);
-                finalGap = round2(finalGap - chunk);
-            }
-        } else {
-            let negGap = Math.abs(finalGap);
-            while (negGap > 0) {
-                const chunk = round2(Math.min(negGap, limit));
-                transactions.push({
-                    day: 28, debit: chunk, credit: 0,
-                    desc: `WDL TFR UPI/DR/${Math.floor(Math.random()*9e9)}/PAYMENT`,
-                    date: formatDate(new Date(end.getFullYear(), end.getMonth(), 28)),
-                    balance: round2(running - chunk)
-                });
-                running = round2(running - chunk);
-                negGap = round2(negGap - chunk);
-            }
-        }
-    }
-
+    // Final closing balance will now EXACTLY match what the user provided.
     return { transactions, openingBalance: startingBal };
 }
 
