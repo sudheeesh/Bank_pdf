@@ -14,7 +14,7 @@ npm start
 
 echo ""
 echo "📍 Access points:"
-echo "   Home:        http://localhost:3000"
-echo "   PDF Editor:  http://localhost:3000/viewer"
-echo "   ODF Editor:  http://localhost:3000/odf-editor"
+echo "   Home:        http://localhost:3015"
+echo "   PDF Editor:  http://localhost:3015/viewer"
+echo "   ODF Editor:  http://localhost:3015/odf-editor"
 echo ""

@@ -356,7 +356,7 @@ function buildHDFCHTML(opts) {
         }
 
         html += `
-        <div class="footer-info" style="position: absolute; bottom: 2mm; left: 9mm; width: calc(100% - 12mm);">
+        <div class="footer-info" style="position: absolute; bottom: 2m; left: 9mm; width: calc(100% - 12mm);">
             <div class="bank-footer-details">
                 <p style="color: blue; font-weight: bold; margin: 0;">HDFC BANK LIMITED</p>
                 <p style="color: blue; font-size: 7pt; margin: 0;">*Closing balance includes funds earmarked for hold and uncleared funds</p>

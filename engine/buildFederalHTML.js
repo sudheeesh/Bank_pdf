@@ -254,12 +254,19 @@ function buildFederalHTML(opts) {
                 const ref = parts[2] || '107352626831';
                 const payer = (parts[3] || 'sender').toLowerCase().replace(/\s+/g, '');
                 raw = `UPI IN/${ref}/${payer}@okhdfcbank/0000`;
-            } else if (raw.includes('SALARY') && !raw.startsWith('NEFT/')) {
-                const ref = '' + Math.floor(11000000 + Math.random() * 88000000);
-                const company = companyName || 'MODULUSTEC';
-                const shortAccName = accName.split(' ')[1] || accName.split(' ')[0];
-                raw = `NEFT/${ref}/${company}/${shortAccName}/SALARY`;
-            } else {
+            } else if (raw.toUpperCase().includes('SALARY')) {
+                // If client typed a detailed narration (already has slashes like NEFT/ref/company/...),
+                // respect it as-is. Only auto-generate if it's a bare keyword.
+                const isAlreadyDetailed = raw.includes('/');
+                if (!isAlreadyDetailed) {
+                    const ref = '' + Math.floor(11000000 + Math.random() * 88000000);
+                    const company = companyName || 'MODULUSTEC';
+                    const shortAccName = accName.split(' ')[1] || accName.split(' ')[0];
+                    raw = `NEFT/${ref}/${company}/${shortAccName}/SALARY`;
+                }
+                // else: keep the client's custom narration exactly as typed
+            } else if (!raw.includes('/')) {
+                // Only auto-generate generic UPI narration if there's no structure in the description
                 const ref = (debit > 0 ? '5182' : '1073') + Math.floor(10000000 + Math.random() * 90000000);
                 const prefix = debit > 0 ? 'UPIOUT' : 'UPI IN';
                 const emailPrefix = debit > 0 ? 'merchant' : 'sender';
@@ -267,6 +274,7 @@ function buildFederalHTML(opts) {
                 const trailing = debit > 0 ? '/5399' : '/0000';
                 raw = `${prefix}/${ref}/${emailPrefix}${bankSuffix}${trailing}`;
             }
+            // else: raw already contains slashes — use client's narration as-is
 
             // Strictly 2 lines logic - split at the second slash to match image
             let line1 = raw, line2 = '';

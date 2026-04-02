@@ -367,7 +367,7 @@ function buildSouthIndianHTML(opts) {
             const debit = tx.newDebit !== undefined ? tx.newDebit : (tx.debit || 0);
             const credit = tx.newCredit !== undefined ? tx.newCredit : (tx.credit || 0);
             const balance = tx.newBalance !== undefined ? tx.newBalance : (tx.balance || 0);
-            const ref = tx.refNo || "";
+            let ref = tx.refNo || "";
 
             let desc = '';
             if (tx.descCells && tx.descCells.length) {

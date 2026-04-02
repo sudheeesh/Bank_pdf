@@ -22,7 +22,13 @@ if (isPackaged) {
 // Initialize the Express server immediately as part of the main process
 // This is faster than spawn and much more reliable for distributed apps
 try {
+  // Ensure we use a unique port to avoid conflicts with your rental website
+  const PORT = 3015;
+  process.env.PORT = PORT;
+  
+  // Start the server
   require(path.join(__dirname, 'server.js'));
+  console.log(`Integrated server started on port ${PORT}`);
 } catch (err) {
   console.error('Failed to start integrated server:', err);
 }
@@ -40,7 +46,10 @@ function createWindow() {
   });
 
   // Load immediately since server is now started in-process
-  mainWindow.loadURL('http://localhost:3002');
+  // Add a small delay to ensure Express has bound to the port
+  setTimeout(() => {
+    mainWindow.loadURL('http://localhost:3015');
+  }, 500);
 
   mainWindow.on('closed', () => {
     mainWindow = null;

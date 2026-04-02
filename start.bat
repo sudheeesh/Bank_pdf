@@ -24,8 +24,8 @@ call npm start
 
 echo.
 echo 📍 Access points:
-echo    Home:        http://localhost:3000
-echo    PDF Editor:  http://localhost:3000/viewer
-echo    Builder UI:  http://localhost:3000/index.html
+echo    Home:        http://localhost:3015
+echo    PDF Editor:  http://localhost:3015/viewer
+echo    Builder UI:  http://localhost:3015/index.html
 echo.
 pause
