@@ -28,9 +28,12 @@ function buildSouthIndianHTML(opts) {
         micr = "",
         customerNo = "A45956134",
         statementPeriod = "01-08-2025 TO 28-01-2026",
+        period,
         branchAddress = "",
         logoSrc = "", // Passes base64 from server
     } = opts;
+
+    const displayPeriod = period || statementPeriod;
 
     let balance = parseFloat(openingBalance) || 0;
     let totalWithdrawals = 0;
@@ -355,7 +358,7 @@ function buildSouthIndianHTML(opts) {
             </div>
             <div class="thick-line" style="margin-top: 10px;"></div>
             <div class="statement-period">
-                STATEMENT OF ACCOUNT FOR THE PERIOD FROM ${statementPeriod.toUpperCase()}
+                STATEMENT OF ACCOUNT FOR THE PERIOD FROM ${displayPeriod.toUpperCase()}
             </div>
         `;
 
