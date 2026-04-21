@@ -322,7 +322,7 @@ function buildCanaraHTML(opts) {
         <style>
             @page { size: A4 portrait; margin: 0; }
             * { box-sizing: border-box; }
-            body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #000; margin: 0; padding: 0; background: #fff; }
+            body { font-family: ArialMT, Arial, Helvetica, sans-serif; font-size: 8pt; color: #000; margin: 0; padding: 0; background: #fff; }
             
             .page {
                 width: 210mm;
