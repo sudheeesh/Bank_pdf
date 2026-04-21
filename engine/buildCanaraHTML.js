@@ -187,14 +187,28 @@ function buildCanaraHTML(opts) {
                 const hash1 = Math.random().toString(16).substring(2, 6).toUpperCase();
                 const hash = `ICIE18AFC5B3951489FAECB699E992${hash1}C15B`;
 
+                // --- Parse transaction date into (d, m, y) — handles all common formats ---
                 let d = "01", m = "01", y = "2025";
-                let dateParts = dateStr.split('-');
-                if (dateParts.length === 3) {
-                    d = dateParts[0].padStart(2, '0');
-                    const mStr = dateParts[1].toUpperCase();
-                    const mn = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"].indexOf(mStr);
-                    m = mn >= 0 ? String(mn + 1).padStart(2, '0') : "01";
-                    y = dateParts[2].length === 2 ? "20" + dateParts[2] : dateParts[2];
+                // Normalise separators: replace / with -
+                const normDate = (dateStr || '').replace(/\//g, '-').trim();
+                const MONTH_NAMES = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+                if (normDate) {
+                    const parts = normDate.split('-');
+                    if (parts.length === 3) {
+                        // Check if middle part is a month name (DD-MMM-YY or DD-MMM-YYYY)
+                        const mnIdx = MONTH_NAMES.indexOf(parts[1].toUpperCase().substring(0, 3));
+                        if (mnIdx >= 0) {
+                            // Format: DD-MMM-YY or DD-MMM-YYYY
+                            d = parts[0].padStart(2, '0');
+                            m = String(mnIdx + 1).padStart(2, '0');
+                            y = parts[2].length === 2 ? "20" + parts[2] : parts[2];
+                        } else {
+                            // Format: DD-MM-YYYY or DD-MM-YY
+                            d = parts[0].padStart(2, '0');
+                            m = parts[1].padStart(2, '0');
+                            y = parts[2].length === 2 ? "20" + parts[2] : parts[2];
+                        }
+                    }
                 }
                 const tH = String(Math.floor(Math.random() * 14) + 6).padStart(2, '0');
                 const tM = String(Math.floor(Math.random() * 60)).padStart(2, '0');
